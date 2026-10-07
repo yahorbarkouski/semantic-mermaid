@@ -1,0 +1,28 @@
+flowchart TD
+  subgraph Emp[Employee]
+    E1([Submit expense claim])
+    E2[Revise claim]
+    E3[Upload missing receipt]
+    E4([Reimbursed])
+  end
+  subgraph Mgr[Manager]
+    M1[Review claim]
+    M2{Within policy?}
+  end
+  subgraph Fin[Finance]
+    F1[Audit receipts]
+    F2{Receipts complete?}
+    F3[Pay out]
+    F4([Claim rejected])
+  end
+  E1 --> M1 --> M2
+  M2 -->|over limit| E2 --> M1
+  M2 -->|yes| F1 --> F2
+  F2 -->|missing| E3 --> F1
+  F2 -->|yes| F3 --> E4
+  F2 -->|fraud suspected| F4
+
+  %% @lanes Emp Mgr Fin
+  %% @main E1 M1 M2 F1 F2 F3 E4
+  %% @retry E2 -> M1, E3 -> F1
+  %% @exit F2 -> F4

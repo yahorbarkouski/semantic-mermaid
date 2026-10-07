@@ -2,7 +2,7 @@
 // examples/<name>.png beside its source, and the README's comparisons, the same diagram drawn by
 // Mermaid's ELK layout and by the semantic layout side by side (one above the other for wide
 // drawings), as docs/images/<name>.png; docs/images/page-fit.png, a wide diagram on a page as
-// written and as render draws it for the page; and docs/images/swimlanes.png, the sign-in example
+// written and as render draws it for the page; and docs/images/swimlanes.png, the expense example
 // as Mermaid's own swimlane diagram and with @lanes.
 //
 //   npm run images
@@ -64,10 +64,10 @@ try {
   await page.locator('.figure').screenshot({ path: path.join(OUT, 'page-fit.png') });
   console.log(`docs/images/page-fit.png  (${fitted.report?.layout?.chosen})`);
 
-  // the swimlane figure: the sign-in example as Mermaid's own swimlane diagram, and with @lanes
-  const signIn = fs.readFileSync(path.join(EXAMPLES, 'sign-in.mmd'), 'utf8');
-  const swimlane = await renderer.render(signIn.replace(/^flowchart TB/m, 'swimlane-beta TB'), { fit: false });
-  const lanes = await renderer.render(signIn, { fit: false });
+  // the swimlane figure: the expense example as Mermaid's own swimlane diagram, and with @lanes
+  const expense = fs.readFileSync(path.join(EXAMPLES, 'expense.mmd'), 'utf8');
+  const swimlane = await renderer.render(expense.replace(/^flowchart TD/m, 'swimlane-beta TD'), { fit: false });
+  const lanes = await renderer.render(expense, { fit: false });
   await page.setContent(`<style>${STYLE}</style><div class="figure across">${panel('Mermaid · swimlane-beta', swimlane.svg, 'elk')}${panel('Semantic Mermaid · @lanes', lanes.svg, 'ours')}</div>`);
   await page.locator('.figure').screenshot({ path: path.join(OUT, 'swimlanes.png') });
   console.log('docs/images/swimlanes.png');

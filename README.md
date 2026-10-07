@@ -110,14 +110,15 @@ The sources of these figures are in [examples/](examples/), and [samples/](sampl
 
 ## Compared with Mermaid's swimlanes
 
-Mermaid 11.16 added a swimlane diagram of its own, `swimlane-beta`, written like a flowchart with its lanes as subgraphs. Here is the SAML sign-in from the top of this page drawn by it and by Semantic Mermaid:
+Mermaid 11.16 added a swimlane diagram of its own, `swimlane-beta`, written like a flowchart with its lanes as subgraphs. Here is an expense claim passed between an employee, a manager and finance, drawn by it and by Semantic Mermaid:
 
-![The SAML sign-in drawn twice in three lanes. On the left, Mermaid's swimlane-beta puts steps from different lanes on shared rows, so some arrows run sideways and back up and two cross with small hops. On the right, Semantic Mermaid gives every step its own row, and the declared retry is an orange return down the left.](docs/images/swimlanes.png)
+![An expense claim drawn twice in three lanes: Employee, Manager and Finance. On the left, Mermaid's swimlane-beta sends the return for a missing receipt on a detour around the whole diagram, and places "Claim rejected" at the bottom, far from its decision. On the right, Semantic Mermaid draws both returns from the employee as orange lines up the left of the Employee lane, each back to the step it repeats, and the rejection beside the decision that leads to it.](docs/images/swimlanes.png)
 
-*The same nodes, arrows and subgraphs ([examples/sign-in.mmd](examples/sign-in.mmd)); for the left drawing only the first line was changed, to `swimlane-beta TB`.*
+*The same nodes, arrows and lanes ([examples/expense.mmd](examples/expense.mmd)); for the left drawing only the first line was changed, to `swimlane-beta TD`. Both drawings are about the same size.*
 
-- **The agent states intent, and the engine picks the form.** `%% @lanes` says who does what. The engine lays the diagram out both as lanes and as ordinary groups, scores each, and keeps the better, so stages a process passes through once come out as groups, and the agent never has to choose a diagram type. The main path, exits and retries still apply inside the lanes: the declared retry is the orange return on the left.
-- **Time runs one way.** Every step gets its own row, so the process reads top to bottom, and hand-offs cross between lanes in the gaps between steps. `swimlane-beta` puts steps from different lanes on shared rows, so some arrows run against the flow; for example, "Follow redirect to IdP" climbs back over the top row to reach "Parse AuthnRequest". `swimlane-beta` draws the more compact picture: 1,092 px tall against 1,570, at similar widths (818 and 757 px).
+- **The agent states intent, and the engine picks the form.** `%% @lanes` says who does what, `@retry` which arrows send work back, and `@exit` which outcome ends the claim. The engine lays the diagram out both as lanes and as ordinary groups, scores each, and keeps the better, so the agent never has to choose a diagram type.
+- **Returns and exits stay beside their steps.** In `swimlane-beta`, the missing receipt goes back to finance on a detour down the page, along the bottom and up the right edge, and "Claim rejected" lands at the bottom, far from "Receipts complete?". Semantic Mermaid draws both returns as orange lines up the left of the Employee lane, each back to the step it repeats, and the rejection beside its decision.
+- **Time runs one way.** Every step gets its own row, so the claim reads top to bottom, and hand-offs cross between lanes in the gaps between steps.
 - **The file stays a flowchart.** Every Mermaid host draws a diagram with `@lanes`, as plain subgraphs where the host does not run the engine. A `swimlane-beta` diagram needs Mermaid 11.16 or later, and fails to render on older hosts.
 
 ## How it works

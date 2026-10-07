@@ -20,6 +20,12 @@ Each example is a Mermaid source file with Semantic Mermaid directives, next to 
 
 ![Employee onboarding in three horizontal lanes](onboarding.png)
 
+## [expense.mmd](expense.mmd): lanes with returns and an exit
+
+`@lanes Emp Mgr Fin`, two `@retry` arrows and one `@exit`. An expense claim passes between the employee, the manager and finance; both returns from the employee run up the left of the Employee lane, each back to the step it repeats, and the rejection sits beside the decision that leads to it.
+
+![An expense claim in three lanes, with two returns from the employee and a rejection beside its decision](expense.png)
+
 ## [incident.mmd](incident.mmd): side groups
 
 `@side Signals Playbooks`. Each group of references sits beside the step it feeds.
