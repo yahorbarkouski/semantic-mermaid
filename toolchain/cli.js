@@ -6,11 +6,12 @@
 //   semantic-mermaid setup   download the headless browser render uses, once
 //
 // A file argument of "-" reads the diagram from standard input. `render` writes each -o file in the
-// format its name ends in (.svg or .png), and diagram.svg beside the source when no -o is given. Both
-// commands print "ok" or the problems to fix; --verbose adds what the engine understood (and, for
-// render, the layout it chose). They exit with status 1 when the diagram has errors (a parse error,
-// or a directive that names a missing node or arrow). `render --candidate name` forces one of the
-// engine's layout candidates (the names `render --json` lists under `tried`), for debugging.
+// format its name ends in (.svg or .png), and <file>.svg beside the source when no -o is given; a
+// diagram from standard input needs -o. Both commands print "ok" or the problems to fix; --verbose
+// adds what the engine understood (and, for render, the layout it chose). They exit with status 1
+// when the diagram has errors (a parse error, or a directive that names a missing node or arrow).
+// `render --candidate name` forces one of the engine's layout candidates (the names
+// `render --json` lists under `tried`), for debugging.
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -75,7 +76,11 @@ async function main() {
     }
     return finish(report);
   }
-  const outs = values.out?.length ? values.out : [file === '-' ? 'diagram.svg' : file.replace(/\.(mmd|mermaid|md|txt)$/i, '') + '.svg'];
+  if (file === '-' && !values.out?.length) {
+    console.error('stdin: name the image to write, with -o name.svg or -o name.png');
+    return 2;
+  }
+  const outs = values.out?.length ? values.out : [file.replace(/\.(mmd|mermaid|md|txt)$/i, '') + '.svg'];
   const unknown = outs.find((o) => !/\.(svg|png)$/i.test(o));
   if (unknown) {
     console.error(`${name}: -o ${unknown}: the file name must end in .svg or .png`);

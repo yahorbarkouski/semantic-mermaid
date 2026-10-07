@@ -15,11 +15,22 @@ You know what the diagram means when you write it. State all of it, and the engi
 
 1. Write the flowchart as usual, with a short id for every box (`A`, `pay`, `B2`).
 2. Add every directive that applies (below): the main path, each exit and retry, every box or group that serves one step, peers in order, lanes. Each fact you state is one the engine does not have to guess, so state everything that is true of the diagram.
-3. If you have the `semantic-mermaid` CLI, check once: `semantic-mermaid check diagram.mmd`. It prints `ok`, or each problem with what fixes it, such as the valid ids or where an arrow really leads. Fix those lines. When you will render in step 4, skip this step: `render` prints the same check. Without the CLI, skip it too.
-4. Deliver it in the form the reader's tool can show:
+3. If you have the `semantic-mermaid` CLI, check once. Pass the diagram on standard input with `-`, so no file is written:
+
+   ```
+   semantic-mermaid check - <<'EOF'
+   flowchart TD
+     A([Order placed]) --> B{Payment ok?}
+     ...
+     %% @main A B C D E F
+   EOF
+   ```
+
+   It prints `stdin: ok`, or each problem with what fixes it, such as the valid ids or where an arrow really leads. Fix those lines. When you will render in step 4, skip this step: `render` prints the same check. Without the CLI, skip it too.
+4. Deliver it in the form the reader's tool can show. `render` also reads the diagram from standard input and writes only the image named by `-o`. Never save the Mermaid source to a file of its own.
    - A page that runs Semantic Mermaid: the Mermaid text is enough.
-   - GitHub, GitLab, Notion, or other Markdown that draws Mermaid itself: those hosts ignore the directives. Save the source as a `.mmd` file, run `semantic-mermaid render name.mmd` (it writes `name.svg` beside the source), and embed the SVG as an image, for example `![Order flow](docs/diagrams/order.svg)`. Keep the `.mmd` file; when the diagram changes, edit it and render again.
-   - A chat or a terminal: run `semantic-mermaid render name.mmd -o name.png` and share the PNG, with the Mermaid source if the user may want to change it.
+   - GitHub, GitLab, Notion, or other Markdown that draws Mermaid itself: those hosts ignore the directives. Render an SVG into the repository with `semantic-mermaid render - -o docs/diagrams/order.svg <<'EOF'` (the diagram, then `EOF`), and embed it as an image: `![Order flow](docs/diagrams/order.svg)`. When the diagram changes, render the new version to the same file.
+   - A chat or a terminal: the diagram is temporary, so render it to a temporary file, `semantic-mermaid render - -o "$(mktemp -d)/order.png" <<'EOF'`, and share the PNG at the path `render` prints. Include the Mermaid source in your reply if the user may want to change it.
 
    There is no need to open the image yourself. If `render` says the browser is not installed, run `semantic-mermaid setup` once.
 

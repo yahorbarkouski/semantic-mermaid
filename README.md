@@ -79,7 +79,7 @@ Paste this into Claude Code, Codex, Cursor or any agent with a shell:
 Install Semantic Mermaid, so the flowcharts you write lay out by what they mean:
 1. Install the skill: `npx skills add yahorbarkouski/semantic-mermaid -g -y`.
 2. Install its CLI: `npm install -g semantic-mermaid`, then `semantic-mermaid setup` (it downloads a headless browser, about 95 MB, used only to render images).
-3. Confirm it works: write `flowchart TD` + `A --> B` + `%% @main A B` to a temporary .mmd file and run `semantic-mermaid check` on it. It should report the file as ok.
+3. Confirm it works: pipe the three lines `flowchart TD`, `A --> B` and `%% @main A B` into `semantic-mermaid check -`. It should print `stdin: ok`.
 ```
 
 ### Install it yourself
@@ -110,7 +110,7 @@ To use the layout in a web page, or the Node API, add the package to your projec
 
 With the skill installed, the agent's loop stays close to writing plain Mermaid: write the flowchart, add a directive for everything it means, check once, and deliver. A check takes about 0.1 s and prints `ok` or the exact fix. A wrong directive cannot break the diagram, because the lines are comments, and the agent never opens an image to inspect it.
 
-What the agent delivers depends on where the diagram will be read. A page that runs Semantic Mermaid draws the Mermaid text itself. GitHub, GitLab and Notion draw Mermaid with their own layout and ignore the directives, so there the agent keeps the source in a `.mmd` file, renders it to an SVG beside it, and embeds the SVG as an image. In a chat or a terminal it renders a PNG and shares the file. The skill itself is [skills/semantic-mermaid/SKILL.md](skills/semantic-mermaid/SKILL.md).
+What the agent delivers depends on where the diagram will be read. A page that runs Semantic Mermaid draws the Mermaid text itself. GitHub, GitLab and Notion draw Mermaid with their own layout and ignore the directives, so there the agent pipes the diagram into `semantic-mermaid render` and embeds the SVG it writes as an image. In a chat or a terminal it renders a PNG to a temporary file and shares it. The agent never saves the Mermaid source to a file of its own. The skill itself is [skills/semantic-mermaid/SKILL.md](skills/semantic-mermaid/SKILL.md).
 
 ### From the command line
 
@@ -122,7 +122,7 @@ semantic-mermaid check examples/order.mmd
 semantic-mermaid render examples/order.mmd -o order.svg -o order.png
 ```
 
-`check` prints `ok`, or each problem with its line and what fixes it, and exits with status 1 when there is an error:
+A file argument of `-` reads the diagram from standard input, so a diagram another program writes never needs a file; `render -` then takes the image to write from `-o`. `check` prints `ok`, or each problem with its line and what fixes it, and exits with status 1 when there is an error:
 
 ```
 order.mmd: 1 error
