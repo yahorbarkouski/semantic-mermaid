@@ -6,6 +6,7 @@ import { resolveFacts } from '../src/facts/resolve.js';
 import { applyFeatures, restoreEdges } from '../src/engine/elk-graph.js';
 import { candidates } from '../src/engine/layout.js';
 import { measure, placeTitles, score } from '../src/engine/score.js';
+import { alignMainPath } from '../src/engine/labels.js';
 import { layoutData, elkGraph } from './helpers.js';
 
 const ALL = { spine: true, loops: true, sideBoxes: true, sideGroups: true, ports: true, merge: false, peerOrder: false, direction: null };
@@ -79,4 +80,38 @@ test('the score counts crossings and arrows through boxes, and moves a crossed t
   geometry.edges[0].points = [{ x: 100, y: 20 }, { x: 100, y: 200 }];
   assert.equal(placeTitles(/** @type {any} */ (geometry)).titleSides.get('G'), 'left');
   assert.ok(Number.isFinite(score(m)));
+});
+
+/** A laid-out ELK graph: A, B and C down one column with B pushed 22 px right, and a retry from R into B's top. */
+function shiftedColumn(extra = []) {
+  return {
+    id: 'root', layoutOptions: { 'elk.direction': 'DOWN' },
+    children: [
+      { id: 'A', x: 100, y: 0, width: 100, height: 40 },
+      { id: 'B', x: 122, y: 100, width: 100, height: 40 },
+      { id: 'C', x: 100, y: 200, width: 100, height: 40 },
+      { id: 'R', x: 300, y: 200, width: 100, height: 40 },
+      ...extra,
+    ],
+    edges: [
+      { id: 'e1', sources: ['A'], targets: ['B'], sections: [{ startPoint: { x: 150, y: 40 }, bendPoints: [{ x: 150, y: 70 }, { x: 172, y: 70 }], endPoint: { x: 172, y: 100 } }] },
+      { id: 'e2', sources: ['B'], targets: ['C'], sections: [{ startPoint: { x: 150, y: 140 }, endPoint: { x: 150, y: 200 } }] },
+      { id: 'e3', sources: ['R'], targets: ['B'], sections: [{ startPoint: { x: 350, y: 200 }, bendPoints: [{ x: 350, y: 80 }, { x: 200, y: 80 }], endPoint: { x: 200, y: 100 } }] },
+    ],
+  };
+}
+
+test('a main-path box ELK pushed aside moves back onto the path, and its arrows follow', () => {
+  const result = alignMainPath(shiftedColumn(), { mainPath: ['e1', 'e2'] }, new Set());
+  const box = (id) => result.children.find((c) => c.id === id);
+  const edge = (id) => result.edges.find((e) => e.id === id).sections[0];
+  assert.equal(box('B').x, 100);
+  assert.deepEqual([edge('e1').startPoint, edge('e1').endPoint, edge('e1').bendPoints], [{ x: 150, y: 40 }, { x: 150, y: 100 }, []]);
+  // the retry ended at B's top corner, so its last stretch moves with the box
+  assert.deepEqual([edge('e3').bendPoints[1], edge('e3').endPoint], [{ x: 178, y: 80 }, { x: 178, y: 100 }]);
+});
+
+test('a main-path box stays where it is when moving it would crowd another box', () => {
+  const result = alignMainPath(shiftedColumn([{ id: 'N', x: 40, y: 100, width: 55, height: 40 }]), { mainPath: ['e1', 'e2'] }, new Set());
+  assert.equal(result.children.find((c) => c.id === 'B').x, 122);
 });

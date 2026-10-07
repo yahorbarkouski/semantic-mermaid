@@ -4,7 +4,7 @@
 import { applyFeatures, undoFeatures } from './elk-graph.js';
 import { layoutSideGroups } from './side-groups.js';
 import { layoutLanes } from './lanes.js';
-import { clearLabels, straightenEnds } from './labels.js';
+import { alignMainPath, clearLabels, straightenEnds } from './labels.js';
 import { DECISION_SHAPES } from '../facts/resolve.js';
 import { readGeometry } from './geometry.js';
 import { measure, score } from './score.js';
@@ -108,21 +108,36 @@ export async function layoutSemantically(elkGraph, elk, { graph, facts, force })
   // replayed on Mermaid's own graph object, which Mermaid reads back after layout
   const inner = await layoutSideGroups(elkGraph, elk, facts);
   const corners = new Set([...graph.nodes.values()].filter((n) => DECISION_SHAPES.has(n.shape)).map((n) => n.id));
-  const layOut = async (/** @type {any} */ target, /** @type {Candidate} */ candidate) => {
+  /** Lay a candidate out with ELK, or with the lane router. */
+  const lay = async (/** @type {any} */ target, /** @type {Candidate} */ candidate) => {
     if (candidate.lanes) {
       if (candidate.features.direction) target.layoutOptions['elk.direction'] = candidate.features.direction;
       const laid = layoutLanes(target, graph, facts, candidate.lanes);
       if (typeof laid === 'string') throw new Error(laid);
-      return clearLabels(laid);
+      return laid;
     }
     const applied = applyFeatures(target, graph, facts, candidate.features, inner);
-    return clearLabels(straightenEnds(undoFeatures(await elk.layout(target), applied), corners));
+    return undoFeatures(await elk.layout(target), applied);
   };
-  const run = async (/** @type {Candidate} */ candidate) => {
-    const result = await layOut(JSON.parse(JSON.stringify(elkGraph)), candidate);
+  /** The finishing touches; `align` puts main-path boxes back on the path's line. */
+  const finish = (/** @type {any} */ laid, /** @type {Candidate} */ candidate, /** @type {boolean} */ align) => {
+    if (candidate.lanes) return clearLabels(laid);
+    if (align) alignMainPath(laid, facts, corners);
+    return clearLabels(straightenEnds(laid, corners));
+  };
+  const scored = (/** @type {any} */ result, /** @type {Candidate} */ candidate) => {
     const measurements = measure(readGeometry(result), facts);
     const direction = result.layoutOptions?.['elk.direction'] ?? 'DOWN';
-    return { candidate, measurements, score: score(measurements) + (UPSTREAM_COST[direction] ?? 0) + ignoredCost(candidate, facts) };
+    return { measurements, score: score(measurements) + (UPSTREAM_COST[direction] ?? 0) + ignoredCost(candidate, facts) };
+  };
+  const run = async (/** @type {Candidate} */ candidate) => {
+    const laid = await lay(JSON.parse(JSON.stringify(elkGraph)), candidate);
+    // aligning the main path moves boxes after ELK placed them; it is kept only where it scores
+    // better, and plain ELK stays as ELK draws it, the baseline the other candidates are measured against
+    const plain = { candidate, align: false, ...scored(finish(JSON.parse(JSON.stringify(laid)), candidate, false), candidate) };
+    if (candidate.lanes || !candidate.features.spine) return plain;
+    const aligned = { candidate, align: true, ...scored(finish(laid, candidate, true), candidate) };
+    return aligned.score < plain.score ? aligned : plain;
   };
 
   const base = await run({ name: 'elk', features: NONE });
@@ -143,7 +158,7 @@ export async function layoutSemantically(elkGraph, elk, { graph, facts, force })
   const ranked = runs.map((r, i) => ({ r, i })).sort((a, b) => a.r.score - b.r.score || a.i - b.i).map((x) => x.r);
   const best = ranked.find((r) => r.candidate.name === force) ?? ranked[0];
   return {
-    result: await layOut(elkGraph, best.candidate),
+    result: finish(await lay(elkGraph, best.candidate), best.candidate, best.align),
     choice: {
       chosen: best.candidate.name,
       tried: [...ranked.map((r) => ({ name: r.candidate.name, score: round(r.score) })), ...failed.map((f) => ({ name: f.name, score: NaN, error: f.error }))],
