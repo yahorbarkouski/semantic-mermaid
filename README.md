@@ -65,8 +65,6 @@ Every image `render` writes is drawn for the page it will be read on, about 800 
 
 ## Get started
 
-### With your agent
-
 Paste this into Claude Code, Codex, Cursor or any agent with a shell:
 
 ```text
@@ -82,115 +80,17 @@ flowchart TD
 MMD
 ```
 
-Or install it yourself. The skill is on [skills.sh](https://skills.sh/yahorbarkouski/semantic-mermaid). This installs it for every project; it asks which agents to install it for, such as Claude Code, Codex or Cursor, and you select yours with the space bar:
+Or install it yourself: the skill from [skills.sh](https://skills.sh/yahorbarkouski/semantic-mermaid), which asks which agents to install it for (select yours with the space bar), and the CLI it uses, which needs Node 22.12 or later. `setup` downloads a headless browser, about 95 MB, used only to render images.
 
 ```bash
 npx skills add yahorbarkouski/semantic-mermaid -g
 ```
 
-The skill checks and renders diagrams with the `semantic-mermaid` CLI; install it as [From the command line](#from-the-command-line) describes.
-
-With the skill installed, the agent's loop stays close to writing plain Mermaid: write the flowchart, add a directive for everything it means, check once, and deliver. A check takes about 0.15 s and prints `ok` or the exact fix. A wrong directive cannot break the diagram, because the lines are comments, and the agent never opens an image to inspect it.
-
-What the agent delivers depends on where the diagram will be read. A page that runs Semantic Mermaid draws the Mermaid text itself. GitHub and GitLab draw Mermaid with their own layout and ignore the directives, so for a file in a repository the agent pipes the diagram into `semantic-mermaid render` and embeds the SVG it writes as an image. The SVG carries the diagram's text, and `semantic-mermaid source` prints it when the diagram needs to change, so the agent never saves the Mermaid source to a file of its own. Where only text fits, such as a pull-request description, the agent writes a `mermaid` code block. In a chat or a terminal it renders a PNG to a temporary file and shares it. The skill itself is [skills/semantic-mermaid/SKILL.md](skills/semantic-mermaid/SKILL.md).
-
-### From the command line
-
-The CLI needs Node 22.12 or later:
-
 ```bash
-npm install -g semantic-mermaid
+npm install -g semantic-mermaid && semantic-mermaid setup
 ```
 
-```bash
-semantic-mermaid setup
-```
-
-`check` runs Mermaid's parser in Node and works right after `npm install`, which takes about 220 MB, most of it Mermaid. `setup` downloads the headless browser that `render` draws in (about 95 MB, 200 MB unpacked), once. On Linux the browser also needs system libraries; if they are missing, `render`'s error message gives the command that installs them.
-
-Then check a diagram, render it to images, and read its text back from the SVG; `examples/order.mmd` is one of the examples in this repository:
-
-```bash
-semantic-mermaid check examples/order.mmd
-```
-
-```bash
-semantic-mermaid render examples/order.mmd -o order.svg -o order.png
-```
-
-```bash
-semantic-mermaid source order.svg
-```
-
-A file argument of `-` reads the diagram from standard input, so a diagram another program writes never needs a file; `render -` then takes the image to write from `-o`. `render` creates the image's folder, and writes nothing while the diagram has errors. Every SVG it writes carries the diagram's text, which `source` prints.
-
-`render` draws images for a page about 800 px wide, as [Auto-sized for the page](#auto-sized-for-the-page) describes; `--page-width` sets another width, and `--no-fit` keeps the diagram as written. `check` prints `ok`, or each problem with its line and what fixes it, and exits with status 1 when there is an error. With `@exit B -> X` in `examples/order.mmd` changed to `@exit B -> Y`:
-
-```
-order.mmd: 1 error
-error: line 11: @exit: no node "Y"; ids are A, B, C, D, E, F, G, X, R
-```
-
-It also warns when the diagram's own configuration selects another layout (`config: layout: elk`), which would switch the directives off. Add `--verbose` to see what the engine understood:
-
-```
-order.mmd: ok
-understood:
-  main path (declared): A -> B -> C -> D -> E -> F
-  exits (declared): B -> X
-  retries, drawn as returns (declared): G -> D
-  side branches of main-path decisions (inferred): D -> G
-  side boxes: R (declared)
-```
-
-`render --verbose` also prints the layout the engine chose:
-
-```
-layout: semantic (score 0.18; plain ELK 1.13; lower is better)
-  crossings 0, arrows through boxes 0, label clashes 0, hugging arrows 0, crossed group titles 0, aspect 0.72
-```
-
-The score is the engine's own measure, and it compares layouts of the same diagram only. The second line counts defects in the chosen layout: arrow crossings, arrows through boxes, labels touching other arrows, unrelated arrows running side by side ("hugging"), arrows across group titles, and the drawing's width-to-height ratio ("aspect"). When the chosen layout leaves out something you declared, for example a peer order that would have cost crossings, `render` says so in a `note` line. `render --elk` draws the same diagram with Mermaid's ELK layout, for comparison.
-
-### In a web app
-
-Add the package to your project:
-
-```bash
-npm install semantic-mermaid mermaid@~12.1.0
-```
-
-The engine registers as a Mermaid 12 layout named `semantic`. In an app that already renders Mermaid, one call opts in the flowcharts that carry directives and leaves every other diagram as it was:
-
-```js
-import mermaid from 'mermaid';
-import { install } from 'semantic-mermaid';
-
-const semantic = install(mermaid, { apply: 'directives' });
-mermaid.initialize({ startOnLoad: false });
-const { svg } = await mermaid.render('d1', source);
-semantic.report('d1');                       // what the engine understood and chose
-```
-
-Mermaid strips comments before layout, so `install` wraps `mermaid.render` to hand each diagram's text to the engine. [docs/EMBEDDING.md](docs/EMBEDDING.md) covers the rest for app developers: the other ways to opt diagrams in, themes, and what the layout costs in download size and render time.
-
-### From Node
-
-Installed as for a web app, the package also checks and renders diagrams from Node:
-
-```js
-import { checkDiagram } from 'semantic-mermaid/check';
-
-const report = await checkDiagram(source);   // what the engine understood, and problems; no browser
-```
-
-```js
-import { createRenderer } from 'semantic-mermaid/toolchain';
-
-const renderer = await createRenderer();
-const { svg, png, report } = await renderer.render(source, { png: true });
-await renderer.close();
-```
+Start a new agent session so it picks up the skill, then ask for a diagram, such as "add a flowchart of our checkout to the README". From then on your agent writes the directives, checks them, and delivers each diagram in a form its reader can see, such as an SVG embedded in a GitHub README, since GitHub draws Mermaid with its own layout. The skill, [skills/semantic-mermaid/SKILL.md](skills/semantic-mermaid/SKILL.md), tells it how. To run the CLI yourself, see [docs/CLI.md](docs/CLI.md); to draw Semantic Mermaid in your own app, see [docs/EMBEDDING.md](docs/EMBEDDING.md).
 
 ## More examples
 

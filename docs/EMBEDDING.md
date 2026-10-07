@@ -161,7 +161,23 @@ The report is useful in development tools and logs, for example to show a diagra
 
 ## Render without a page
 
-To render on a server or export images, `createRenderer` from `semantic-mermaid/toolchain` runs Mermaid and the engine in headless Chromium through Playwright. `npx semantic-mermaid setup` downloads that browser once (about 95 MB), and needs Node 22.12 or later. The README's ["From Node"](../README.md#from-node) section shows the code.
+To render on a server or export images, `createRenderer` from `semantic-mermaid/toolchain` runs Mermaid and the engine in headless Chromium through Playwright, and `checkDiagram` from `semantic-mermaid/check` checks a diagram without a browser:
+
+```js
+import { checkDiagram } from 'semantic-mermaid/check';
+
+const report = await checkDiagram(source);   // what the engine understood, and problems; no browser
+```
+
+```js
+import { createRenderer } from 'semantic-mermaid/toolchain';
+
+const renderer = await createRenderer();
+const { svg, png, report } = await renderer.render(source, { png: true });
+await renderer.close();
+```
+
+`render` draws for a page 800 px wide, as the CLI does; pass `{ fit: false }` to keep the diagram as written, or `{ fit: 1000 }` for another page width. `npx semantic-mermaid setup` downloads the browser once (about 95 MB), and needs Node 22.12 or later.
 
 ## Limits
 

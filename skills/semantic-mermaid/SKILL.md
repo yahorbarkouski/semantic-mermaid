@@ -38,6 +38,8 @@ You know what the diagram means when you write it. State all of it, and the engi
    - A place that takes only text, such as a pull-request or issue description, a comment, or a Notion page: put the diagram in a `mermaid` code block. The host draws it with its own layout, and the directives stay in it for anyone who renders it later.
    - A chat or a terminal: the diagram is temporary, so render it to a temporary file, `semantic-mermaid render - -o "$(mktemp -d)/order.png" <<'MMD'`, and share the PNG at the path `render` prints. Include the Mermaid text in your reply if the user may want to change it.
 
+   `render` draws for a page about 800 px wide, such as a README or a chat: it centres a narrower diagram, and lays out the other way one the page would shrink below 40% of its size, with a `note` saying so; keep that drawing. For an image shown much wider or narrower, pass `--page-width <px>`.
+
    There is no need to open the image yourself. If `render` says the browser is not installed, ask the user whether to run `semantic-mermaid setup`, which downloads about 95 MB once.
 
    In PowerShell, pipe a here-string instead of a heredoc, with `@'` ending its first line and `'@` starting its last, and write temporary files under `$env:TEMP`:
