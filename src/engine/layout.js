@@ -35,6 +35,13 @@ const NONE = { spine: false, loops: false, sideBoxes: false, sideGroups: false, 
 /** Width-to-height ratio beyond which a drawing is a strip worth turning. */
 const STRIP = 8;
 
+/**
+ * Network-simplex placement slows down steeply with arrows that skip layers (ELK routes them through a
+ * hidden box per layer): about 0.1 s at 360 skipped layers, the most in 236 real and synthetic
+ * flowcharts, but 1.4 s at 613 and 10 s at 1706 in dense random graphs. Above this it is not tried.
+ */
+const SIMPLEX_LIMIT = 500;
+
 /** Mermaid's ELK direction for a diagram, and the one readers expect instead of it. */
 const READING = { UP: 'DOWN', LEFT: 'RIGHT' };
 
@@ -44,21 +51,24 @@ const READING = { UP: 'DOWN', LEFT: 'RIGHT' };
  * placement, without decision ports, forced peer order, loop reversal or side groups when those
  * exist, and the other direction for a strip or a bottom-up drawing.
  * @param {Facts} facts
- * @param {{ direction: string, aspect: number }} base  plain ELK's direction and shape
+ * @param {{ direction: string, aspect: number, skipped?: number }} base  plain ELK's direction and shape, and how many layers its arrows skip
  * @returns {Candidate[]}
  */
 export function candidates(facts, base) {
   const semantic = { ...NONE, spine: true, loops: true, sideBoxes: true, sideGroups: facts.sideGroups.size > 0, ports: true, peerOrder: facts.peers.length > 0 };
   /** @type {Candidate[]} */
+  const lanes = facts.lanes.length ? [
+    { name: 'lanes', features: NONE, lanes: /** @type {const} */ ({ returns: 'between' }) },
+    { name: 'lanes-outside', features: NONE, lanes: /** @type {const} */ ({ returns: 'outside' }) },
+  ] : [];
+  /** @type {Candidate[]} */
   const list = [
     { name: 'elk', features: NONE },
-    ...(facts.lanes.length ? [
-      { name: 'lanes', features: NONE, lanes: /** @type {const} */ ({ returns: 'between' }) },
-      { name: 'lanes-outside', features: NONE, lanes: /** @type {const} */ ({ returns: 'outside' }) },
-    ] : []),
+    // lanes run down or to the right; a bottom-up or right-to-left diagram gets them turned, below
+    ...(base.direction === 'DOWN' || base.direction === 'RIGHT' ? lanes : []),
     { name: 'semantic', features: semantic },
     { name: 'semantic+bus', features: { ...semantic, merge: true } },
-    { name: 'semantic-simplex', features: { ...semantic, simplex: true } },
+    ...((base.skipped ?? 0) > SIMPLEX_LIMIT ? [] : [{ name: 'semantic-simplex', features: { ...semantic, simplex: true } }]),
   ];
   if (facts.continuation.size) list.push({ name: 'semantic-no-ports', features: { ...semantic, ports: false } });
   // forcing peer order fixes every box's order; the score weighs that against a free order
@@ -74,7 +84,7 @@ export function candidates(facts, base) {
   else if (base.direction === 'DOWN' && base.aspect > STRIP) directions.push('RIGHT');
   for (const direction of directions) {
     for (const c of list.filter((x) => !x.lanes).slice(0, 3)) list.push({ name: `${c.name}@${direction.toLowerCase()}`, features: { ...c.features, direction } });
-    for (const c of list.filter((x) => x.lanes && !x.features.direction)) list.push({ name: `${c.name}@${direction.toLowerCase()}`, features: { ...NONE, direction }, lanes: c.lanes });
+    for (const c of lanes) list.push({ name: `${c.name}@${direction.toLowerCase()}`, features: { ...NONE, direction }, lanes: c.lanes });
   }
   return list;
 }
@@ -104,8 +114,7 @@ function ignoredCost(candidate, facts) {
  * @returns {Promise<{ result: any, choice: Choice }>} the laid-out graph for Mermaid, and why
  */
 export async function layoutSemantically(elkGraph, elk, { graph, facts, force }) {
-  // candidates run on data-only copies (Mermaid's graph carries functions); the winner is then
-  // replayed on Mermaid's own graph object, which Mermaid reads back after layout
+  // candidates run on data-only copies of Mermaid's graph, which carries functions
   const inner = await layoutSideGroups(elkGraph, elk, facts);
   const corners = new Set([...graph.nodes.values()].filter((n) => DECISION_SHAPES.has(n.shape)).map((n) => n.id));
   /** Lay a candidate out with ELK, or with the lane router. */
@@ -134,14 +143,16 @@ export async function layoutSemantically(elkGraph, elk, { graph, facts, force })
     const laid = await lay(JSON.parse(JSON.stringify(elkGraph)), candidate);
     // aligning the main path moves boxes after ELK placed them; it is kept only where it scores
     // better, and plain ELK stays as ELK draws it, the baseline the other candidates are measured against
-    const plain = { candidate, align: false, ...scored(finish(JSON.parse(JSON.stringify(laid)), candidate, false), candidate) };
+    const plainResult = finish(JSON.parse(JSON.stringify(laid)), candidate, false);
+    const plain = { candidate, result: plainResult, ...scored(plainResult, candidate) };
     if (candidate.lanes || !candidate.features.spine) return plain;
-    const aligned = { candidate, align: true, ...scored(finish(laid, candidate, true), candidate) };
+    const alignedResult = finish(laid, candidate, true);
+    const aligned = { candidate, result: alignedResult, ...scored(alignedResult, candidate) };
     return aligned.score < plain.score ? aligned : plain;
   };
 
   const base = await run({ name: 'elk', features: NONE });
-  const plan = candidates(facts, { direction: elkGraph.layoutOptions?.['elk.direction'] ?? 'DOWN', aspect: base.measurements.aspect });
+  const plan = candidates(facts, { direction: elkGraph.layoutOptions?.['elk.direction'] ?? 'DOWN', aspect: base.measurements.aspect, skipped: skippedLayers(base.result) });
   const runs = [base];
   /** @type {{ name: string, error: string }[]} */
   const failed = [];
@@ -158,7 +169,8 @@ export async function layoutSemantically(elkGraph, elk, { graph, facts, force })
   const ranked = runs.map((r, i) => ({ r, i })).sort((a, b) => a.r.score - b.r.score || a.i - b.i).map((x) => x.r);
   const best = ranked.find((r) => r.candidate.name === force) ?? ranked[0];
   return {
-    result: finish(await lay(elkGraph, best.candidate), best.candidate, best.align),
+    // the winner as laid out while scoring: Mermaid draws from the graph the layout returns
+    result: best.result,
     choice: {
       chosen: best.candidate.name,
       tried: [...ranked.map((r) => ({ name: r.candidate.name, score: round(r.score) })), ...failed.map((f) => ({ name: f.name, score: NaN, error: f.error }))],
@@ -198,3 +210,23 @@ function unapplied(candidate, m, facts, lanesRan) {
 }
 
 const round = (x) => Math.round(x * 100) / 100;
+
+/**
+ * How many layers the arrows of a laid-out graph skip in all; each skipped layer is a hidden box in
+ * ELK's layering. Boxes of one layer share a centre across the flow.
+ * @param {any} result laid-out ELK graph
+ */
+function skippedLayers(result) {
+  const { boxes, edges } = readGeometry(result);
+  const direction = result.layoutOptions?.['elk.direction'] ?? 'DOWN';
+  const vertical = direction === 'DOWN' || direction === 'UP';
+  const centre = (/** @type {{ x: number, y: number, w: number, h: number }} */ b) => Math.round(vertical ? b.y + b.h / 2 : b.x + b.w / 2);
+  const layers = [...new Set([...boxes.values()].map(centre))].sort((a, b) => a - b);
+  const layerOf = new Map([...boxes].map(([id, b]) => [id, layers.indexOf(centre(b))]));
+  let skipped = 0;
+  for (const e of edges) {
+    const a = layerOf.get(e.from), b = layerOf.get(e.to);
+    if (a !== undefined && b !== undefined) skipped += Math.max(0, Math.abs(a - b) - 1);
+  }
+  return skipped;
+}
