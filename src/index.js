@@ -21,7 +21,7 @@ export { parseDirectives, DIRECTIVES } from './language/directives.js';
 export { buildGraph } from './model/graph.js';
 export { resolveFacts, describeFacts } from './facts/resolve.js';
 export { layoutSemantically, candidates } from './engine/layout.js';
-export { PALETTE } from './style/appearance.js';
+export { PALETTE, DARK_PALETTE } from './style/appearance.js';
 
 /** How many diagram sources and reports to remember. */
 const KEEP = 200;
