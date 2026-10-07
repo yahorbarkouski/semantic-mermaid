@@ -8,9 +8,9 @@ We still use diagrams to explain and understand things. Mermaid's default layout
 
 We tested Semantic Mermaid on 236 flowcharts, where, by the engine's own measures, it drew fewer arrow crossings and about a fifth fewer crowded arrow ends than Mermaid's default layout. Blind model judges then compared the two on 20 diagrams written with directives, chosen to show parties, retries, exits and reference material: Semantic Mermaid **won 15, lost 0 and tied 5**, judged with colours off, so on layout alone.
 
-![A SAML sign-in handed between a browser, a service provider and an identity provider, drawn twice. On the left, Mermaid's ELK layout lays the three groups out as separate blocks, and the arrows between them cross, loop around and cut through group titles. On the right, Semantic Mermaid draws three lanes with time running down.](examples/sign-in.png)
+![An expense claim passed between an employee, a manager and finance, drawn twice. On the left, Mermaid's ELK layout stacks the three groups as blocks with the Employee group on top, so the hand-offs run up and down through it. On the right, Semantic Mermaid draws three lanes with time running down, the two returns to earlier steps in orange and the rejection in red beside the decision that leads to it.](examples/expense.png)
 
-*The same source ([examples/sign-in.mmd](examples/sign-in.mmd)) drawn by Mermaid's ELK layout (left) and by Semantic Mermaid (right). Mermaid's own `swimlane-beta` diagram draws lanes too; [Compared with Mermaid's swimlanes](#compared-with-mermaids-swimlanes) shows how the two differ.*
+*The same source ([examples/expense.mmd](examples/expense.mmd)) drawn by Mermaid's ELK layout (left) and by Semantic Mermaid (right). Mermaid's own `swimlane-beta` diagram draws lanes too; [Compared with Mermaid's swimlanes](#compared-with-mermaids-swimlanes) shows how the two differ.*
 
 **Contents:** [How the extension looks like](#how-the-extension-looks-like) · [Directives](#directives) · [Auto-sized for the page](#auto-sized-for-the-page) · [Get started](#get-started) · [More examples](#more-examples) · [Compared with Mermaid's swimlanes](#compared-with-mermaids-swimlanes) · [How it works](#how-it-works) · [How we tested](#how-we-tested) · [Limits](#limits) · [Development](#development)
 
@@ -106,11 +106,15 @@ Start a new agent session so it picks up the skill, then ask for a diagram, such
 
 *Four* `@exit` *arrows: the request path is one row, and the rejections drop below it.*
 
+![A SAML sign-in handed between a browser, a service provider and an identity provider, drawn by ELK as three separate blocks with crossing arrows and by Semantic Mermaid as three lanes with time running down.](examples/sign-in.png)
+
+*`@lanes UA SP IdP` turns three subgraphs into lanes for a SAML sign-in: every step sits in its party's lane, time runs down, and the declared retry from the last step back to the first is the orange line down the left of the Browser lane.*
+
 The [examples gallery](examples/README.md) has these and every other annotated diagram, 17 in all, each with its source and a picture beside ELK.
 
 ## Compared with Mermaid's swimlanes
 
-Mermaid 11.16 added a swimlane diagram of its own, `swimlane-beta`, written like a flowchart with its lanes as subgraphs. Here is an expense claim passed between an employee, a manager and finance, drawn by it and by Semantic Mermaid:
+Mermaid 11.16 added a swimlane diagram of its own, `swimlane-beta`, written like a flowchart with its lanes as subgraphs. Here is the expense claim from the top of this page, drawn by it and by Semantic Mermaid:
 
 ![An expense claim drawn twice in three lanes: Employee, Manager and Finance. On the left, Mermaid's swimlane-beta sends the return for a missing receipt on a detour around the whole diagram, and places "Claim rejected" at the bottom, far from its decision. On the right, Semantic Mermaid draws both returns from the employee as orange lines up the left of the Employee lane, each back to the step it repeats, and the rejection beside the decision that leads to it.](docs/images/swimlanes.png)
 
