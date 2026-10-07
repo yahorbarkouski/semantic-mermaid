@@ -8,7 +8,7 @@ We still use diagrams to explain and understand things. Mermaid's default layout
 
 We tested Semantic Mermaid on 236 flowcharts, where, by the engine's own measures, it drew fewer arrow crossings and about a fifth fewer crowded arrow ends than Mermaid's default layout. Blind model judges then compared the two on 20 diagrams written with directives, chosen to show parties, retries, exits and reference material: Semantic Mermaid **won 15, lost 0 and tied 5**, judged with colours off, so on layout alone.
 
-![A SAML sign-in handed between a browser, a service provider and an identity provider, drawn twice. On the left, Mermaid's ELK layout lays the three groups out as separate blocks, and the arrows between them cross, loop around and cut through group titles. On the right, Semantic Mermaid draws three lanes with time running down.](docs/images/sign-in.png)
+![A SAML sign-in handed between a browser, a service provider and an identity provider, drawn twice. On the left, Mermaid's ELK layout lays the three groups out as separate blocks, and the arrows between them cross, loop around and cut through group titles. On the right, Semantic Mermaid draws three lanes with time running down.](examples/sign-in.png)
 
 *The same source ([examples/sign-in.mmd](examples/sign-in.mmd)) drawn by Mermaid's ELK layout (left) and by Semantic Mermaid (right). Mermaid's own `swimlane-beta` diagram draws lanes too; [Compared with Mermaid's swimlanes](#compared-with-mermaids-swimlanes) shows how the two differ.*
 
@@ -33,7 +33,7 @@ flowchart TD
   %% @side R
 ```
 
-![The order flow drawn by Mermaid's ELK layout and by Semantic Mermaid.](docs/images/order.png)
+![The order flow drawn by Mermaid's ELK layout and by Semantic Mermaid.](examples/order.png)
 
 With these four lines, the path from "Order placed" to "Done" runs in one straight column. "Notify customer" sits beside the payment decision, the backorder loop returns to the stock check, and the fraud rules sit beside the decision they feed. Colours follow the roles: blue for the main path's arrows and for starts, ends and decisions, rose for exit arrows and for exit boxes that end the flow, orange for retries, and a dashed outline for side boxes.
 
@@ -59,7 +59,7 @@ Every image `render` writes is drawn for the page it will be read on, about 800 
 
 ![A delivery process handed between a customer, a restaurant and a courier, on two pages 800 px wide. On the left, drawn left to right as written, it is shrunk to 40% and its labels are too small to read. On the right, the three lanes are drawn top-down and the diagram fits the page at full size.](docs/images/page-fit.png)
 
-*The same source ([samples/food-delivery.mmd](samples/food-delivery.mmd)) on two pages 800 px wide. Written left to right, it is 2024 px wide, and the page shows it at less than 40% of its size. `render` draws its lanes top-down instead, at full size, and prints a `note` line saying why.*
+*The same source ([examples/food-delivery.mmd](examples/food-delivery.mmd)) on two pages 800 px wide. Written left to right, it is 2024 px wide, and the page shows it at less than 40% of its size. `render` draws its lanes top-down instead, at full size, and prints a `note` line saying why.*
 
 `render --page-width 900` sets another page width, and `--no-fit` draws for no page: the diagram keeps its own width. In an app that renders with `install`, diagrams are turned for the page only when the app passes the width of its column as `pageWidth`, and are never framed; see [docs/EMBEDDING.md](docs/EMBEDDING.md). Either way, a drawing longer than 8:1 is also tried turned.
 
@@ -94,19 +94,19 @@ Start a new agent session so it picks up the skill, then ask for a diagram, such
 
 ## More examples
 
-![Employee onboarding across Employee, HR and IT, drawn by ELK as three separate blocks with tangled arrows and by Semantic Mermaid as three horizontal lanes.](docs/images/onboarding.png)
+![Employee onboarding across Employee, HR and IT, drawn by ELK as three separate blocks with tangled arrows and by Semantic Mermaid as three horizontal lanes.](examples/onboarding.png)
 
 *Lanes in a left-to-right diagram are rows, and time runs right. The "No" branch leaves the decision from the corner facing its target. The fix-up step comes back into the corner where the decision's inputs arrive.*
 
-![An incident process with two groups of reference material, drawn by ELK with the groups above the flow and by Semantic Mermaid with each group beside the step it feeds.](docs/images/incident.png)
+![An incident process with two groups of reference material, drawn by ELK with the groups above the flow and by Semantic Mermaid with each group beside the step it feeds.](examples/incident.png)
 
 `@side Signals Playbooks`*: each group of references sits beside the step it feeds, and the main path stays one column.*
 
-![An API gateway with four rejections, drawn by ELK as a descending staircase and by Semantic Mermaid as one straight row with the rejections below.](docs/images/gateway.png)
+![An API gateway with four rejections, drawn by ELK as a descending staircase and by Semantic Mermaid as one straight row with the rejections below.](examples/gateway.png)
 
 *Four* `@exit` *arrows: the request path is one row, and the rejections drop below it.*
 
-The sources of these figures are in [examples/](examples/), and [samples/](samples/) has ten more annotated diagrams with side-by-side ELK comparisons.
+The [examples gallery](examples/README.md) has these and every other annotated diagram, 17 in all, each with its source and a picture beside ELK.
 
 ## Compared with Mermaid's swimlanes
 
@@ -123,7 +123,7 @@ Mermaid 11.16 added a swimlane diagram of its own, `swimlane-beta`, written like
 
 ## How it works
 
-![The engine's pipeline: Mermaid source, Mermaid parses it, facts (declared, then inferred, with the directives as a side input), candidate layouts, score each and keep the best, Mermaid draws the winner, SVG and report.](examples/pipeline.png)
+![The engine's pipeline: Mermaid source, Mermaid parses it, facts (declared, then inferred, with the directives as a side input), candidate layouts, score each and keep the best, Mermaid draws the winner, SVG and report.](docs/images/pipeline.png)
 
 1. **Facts.** The engine reads the directives and binds them to the diagram's boxes and arrows, reporting any that don't match. Whatever the author didn't declare is inferred from structure. The result, the facts, is what the engine knows about the diagram's meaning ([src/facts](src/facts/resolve.js)).
 2. **Candidates.** It builds a handful of layouts from the facts ([src/engine/layout.js](src/engine/layout.js)). Most are configurations of Mermaid's own ELK layout: a straightened main path, arrows that leave decisions from fixed corners, side boxes beside their step, retries reversed into returns, peers in order. Declared lanes get a swimlane layout of their own ([src/engine/lanes.js](src/engine/lanes.js)). Plain ELK is always one of the candidates.

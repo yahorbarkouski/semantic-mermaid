@@ -21,7 +21,7 @@ flowchart TD
   %% @side R
 ```
 
-<p align="center"><img src="images/order.png" alt="The order flow drawn by Mermaid's ELK layout and by Semantic Mermaid" width="640"></p>
+<p align="center"><img src="../examples/order.png" alt="The order flow drawn by Mermaid's ELK layout and by Semantic Mermaid" width="640"></p>
 
 On the right, with these directives the main path runs in one straight column, "Notify customer" sits beside the payment decision on the same row, the backorder loop is drawn as a return, and the fraud rules sit beside the decision they feed.
 

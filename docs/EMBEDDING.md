@@ -119,7 +119,7 @@ Sizes were measured with esbuild (minified, with code splitting). Times were mea
 
 The vendored plugin carries its own copy of ELK, separate from the one Mermaid 12 loads for its default layout, so a page that draws both semantic and ordinary flowcharts downloads both copies. The package ships the vendored plugin unminified (5.1 MB), and your bundler minifies it.
 
-Render times for 17 flowcharts of 5 to 15 boxes, the diagrams in this repository's `examples/` and `samples/` folders:
+Render times for 17 flowcharts of 5 to 15 boxes, the diagrams in this repository's `examples/` folder:
 
 | Layout | Median render | Slowest render |
 | --- | --- | --- |
