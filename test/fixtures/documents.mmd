@@ -1,0 +1,23 @@
+flowchart TD
+    Start{{Document received}}
+    Extract[Extract fields]
+    Valid{Fields valid?}
+    Save[Save record]
+    End{{Record stored}}
+    Correct[Correct fields]
+    subgraph Reference[Reference material]
+        Schema[Field schema]
+        Dictionary[Terminology dictionary]
+    end
+    Start --> Extract
+    Schema --> Extract
+    Dictionary --> Extract
+    Extract --> Valid
+    Valid -->|Yes| Save
+    Valid -->|No| Correct
+    Correct -->|Retry| Extract
+    Save --> End
+
+    %% @main Start Extract Valid Save End
+    %% @retry Correct -> Extract
+    %% @side Schema Dictionary

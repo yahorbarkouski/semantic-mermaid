@@ -1,0 +1,31 @@
+flowchart TD
+    Alert{{Alert fires}}
+    Assess[Assess impact]
+    Mitigate[Apply mitigation]
+    Recovered{Service recovered?}
+    Escalate[Escalate to the owning team]
+    Review[Write the postmortem]
+    Closed{{Incident closed}}
+    subgraph Signals[Signals]
+        Logs[Service logs]
+        Errors[Error-rate dashboard]
+    end
+    subgraph Playbooks[Playbooks]
+        Runbook[Service runbook]
+        Notes[Past incident notes]
+    end
+    Alert --> Assess
+    Logs --> Assess
+    Errors --> Assess
+    Assess --> Mitigate
+    Runbook --> Mitigate
+    Notes --> Mitigate
+    Mitigate --> Recovered
+    Recovered -->|Yes| Review
+    Recovered -->|No| Escalate
+    Escalate -->|Try again| Mitigate
+    Review --> Closed
+
+    %% @main Alert Assess Mitigate Recovered Review Closed
+    %% @retry Escalate -> Mitigate
+    %% @side Signals Playbooks

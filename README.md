@@ -1,0 +1,238 @@
+# Semantic Mermaid
+
+Mermaid flowcharts laid out by what they mean.
+
+You add comment lines to a Mermaid flowchart that say what it means: which path is the main one, which arrows are exits or retries, which boxes only serve one step, which groups (`subgraph` blocks) are parties handing work back and forth. A layout engine reads those lines and draws the diagram to match. The lines are Mermaid comments (`%%`), so the same file still renders on GitHub, in Notion, or anywhere else Mermaid runs; those hosts draw it with their own layout, and for them the CLI below writes an SVG of the semantic layout to commit alongside the source.
+
+The comments are written for agents. An agent that writes a diagram already knows what it means, so it can state that meaning in a line, and the engine turns it into geometry. An agent skill and a CLI fit this into an agent's normal loop: one check that prints `ok` or the exact fix in about 0.1 s, and no picture to look at.
+
+![A SAML sign-in handed between a browser, a service provider and an identity provider, drawn twice. On the left, Mermaid's ELK layout lays the three groups out as separate blocks, and the arrows between them cross, loop around and cut through group titles. On the right, Semantic Mermaid draws three lanes with time running down.](docs/images/sign-in.png)
+
+*The same source ([examples/sign-in.mmd](examples/sign-in.mmd)) drawn by Mermaid's ELK layout (left) and by Semantic Mermaid (right). ELK, the Eclipse Layout Kernel, is the layered layout Mermaid offers as an alternative to its default. One line,* `%% @lanes UA SP IdP`*, names the three subgraphs by their ids (Browser, Service provider and Identity provider) and turns them into swimlanes: every step sits in its party's lane, time runs down, and hand-offs cross between lanes in the gaps between steps. The orange line is the declared retry from the last step back to the first, drawn down the left side of the Browser lane.*
+
+## What you write
+
+```
+flowchart TD
+  A([Order placed]) --> B{Payment ok?}
+  B -->|yes| C[Reserve stock]
+  C --> D{In stock?}
+  D -->|yes| E[Ship] --> F([Done])
+  D -->|no| G[Backorder]
+  G --> D
+  B -->|no| X[Notify customer]
+  R[(Fraud rules)] -.-> B
+
+  %% @main A B C D E F
+  %% @exit B -> X
+  %% @retry G -> D
+  %% @side R
+```
+
+![The order flow drawn by Mermaid's ELK layout and by Semantic Mermaid.](docs/images/order.png)
+
+With these four lines, the path from "Order placed" to "Done" runs in one straight column. "Notify customer" sits beside the payment decision, the backorder loop returns to the stock check, and the fraud rules sit beside the decision they feed. Colours follow the roles: blue for the main path's arrows and for starts, ends and decisions, rose for exit arrows and for exit boxes that end the flow, orange for retries, and a dashed outline for side boxes.
+
+## Directives
+
+
+| Directive         | What it says                                                                                     | How it is drawn                                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `@main A B C`     | The path a reader should follow from start to end. `@main none` for trees and dependency graphs. | One straight line                                                                                                       |
+| `@exit B -> X`    | An outcome that ends the flow early: an error, a rejection                                       | Leaves the decision from a side corner, across the flow; an exit box with no arrows of its own sits beside the decision |
+| `@retry G -> D`   | An arrow back to an earlier step                                                                 | A return along the side                                                                                                 |
+| `@side R`         | Boxes, or a whole group, that serve one step: a config, a store, a log                           | Beside that step, on its row                                                                                            |
+| `@peers P0 P1 P2` | Boxes that belong side by side, in this order                                                    | Kept in that order                                                                                                      |
+| `@lanes A B C`    | Groups that are parties handing work back and forth                                              | Swimlanes, in this order                                                                                                |
+| `@colors off`     | Keep Mermaid's own colours                                                                       | No automatic colours                                                                                                    |
+
+
+Directives go anywhere after the `flowchart` line, usually at the end, and name boxes and subgraphs by their Mermaid ids. Plain Mermaid works too: without directives, the engine infers the main path, decisions and side boxes from the diagram's structure. The full reference is [docs/LANGUAGE.md](docs/LANGUAGE.md).
+
+## More examples
+
+![Employee onboarding across Employee, HR and IT, drawn by ELK as three separate blocks with tangled arrows and by Semantic Mermaid as three horizontal lanes.](docs/images/onboarding.png)
+
+*Lanes in a left-to-right diagram are rows, and time runs right. The "No" branch leaves the decision from the corner facing its target. The fix-up step comes back into the corner where the decision's inputs arrive.*
+
+![An incident process with two groups of reference material, drawn by ELK with the groups above the flow and by Semantic Mermaid with each group beside the step it feeds.](docs/images/incident.png)
+
+`@side Signals Playbooks`*: each group of references sits beside the step it feeds, and the main path stays one column.*
+
+![An API gateway with four rejections, drawn by ELK as a descending staircase and by Semantic Mermaid as one straight row with the rejections below.](docs/images/gateway.png)
+
+*Four* `@exit` *arrows: the request path is one row, and the rejections drop below it.*
+
+The sources of these figures are in [examples/](examples/), each with a picture of its semantic layout.
+
+## Install
+
+### Ask your agent
+
+Paste this into Claude Code, Codex, Cursor or any agent with a shell:
+
+```text
+Install Semantic Mermaid, so the flowcharts you write lay out by what they mean:
+1. Run `npm install -g semantic-mermaid`, then `semantic-mermaid setup` (it downloads a headless browser, about 95 MB, used only to render images).
+2. Save the output of `semantic-mermaid skill` as a skill named semantic-mermaid in your skills folder (for Claude Code: ~/.claude/skills/semantic-mermaid/SKILL.md).
+3. Confirm it works: write `flowchart TD` + `A --> B` + `%% @main A B` to a temporary .mmd file and run `semantic-mermaid check` on it. It should report the file as ok.
+```
+
+### Install it yourself
+
+Semantic Mermaid needs Node 20.6 or later.
+
+```bash
+npm install -g semantic-mermaid
+```
+
+```bash
+semantic-mermaid setup
+```
+
+`check` runs Mermaid's parser in Node and works right after the first command. `setup` downloads the headless browser that `render` draws in (about 95 MB, 200 MB unpacked), once. To give an agent the skill, save the output of `semantic-mermaid skill` in its skills folder; for Claude Code:
+
+```bash
+mkdir -p ~/.claude/skills/semantic-mermaid && semantic-mermaid skill > ~/.claude/skills/semantic-mermaid/SKILL.md
+```
+
+To use the layout in a web page, or the Node API, add the package to your project with `npm install semantic-mermaid mermaid`.
+
+## Use it
+
+### From an agent
+
+With the skill installed, the agent's loop stays close to writing plain Mermaid: write the flowchart, add a directive for everything it means, check once, and deliver. A check takes about 0.1 s and prints `ok` or the exact fix. A wrong directive cannot break the diagram, because the lines are comments, and the agent never opens an image to inspect it.
+
+What the agent delivers depends on where the diagram will be read. A page that runs Semantic Mermaid draws the Mermaid text itself. GitHub, GitLab and Notion draw Mermaid with their own layout and ignore the directives, so there the agent keeps the source in a `.mmd` file, renders it to an SVG beside it, and embeds the SVG as an image. In a chat or a terminal it renders a PNG and shares the file. The skill itself is [skill/SKILL.md](skill/SKILL.md).
+
+### From the command line
+
+```bash
+semantic-mermaid check examples/order.mmd
+```
+
+```bash
+semantic-mermaid render examples/order.mmd -o order.svg -o order.png
+```
+
+`check` prints `ok`, or each problem with its line and what fixes it, and exits with status 1 when there is an error:
+
+```
+order.mmd: 1 error
+error: line 11: @exit: no node "Y"; ids are A, B, C, D, E, F, G, X, R
+```
+
+It also warns when the diagram's own configuration selects another layout (`config: layout: elk`), which would switch the directives off. Add `--verbose` to see what the engine understood:
+
+```
+order.mmd: ok
+understood:
+  main path (declared): A -> B -> C -> D -> E -> F
+  exits (declared): B -> X
+  retries, drawn as returns (declared): G -> D
+  side branches of main-path decisions (inferred): D -> G
+  side boxes: R (declared)
+```
+
+`render --verbose` also prints the layout the engine chose:
+
+```
+layout: semantic (score 0.18; plain ELK 1.13; lower is better)
+  crossings 0, arrows through boxes 0, label clashes 0, hugging arrows 0, crossed group titles 0, aspect 0.72
+```
+
+The score is the engine's own measure, and it compares layouts of the same diagram only. The second line counts defects in the chosen layout: arrow crossings, arrows through boxes, labels touching other arrows, unrelated arrows running side by side ("hugging"), arrows across group titles, and the drawing's width-to-height ratio ("aspect"). When the chosen layout leaves out something you declared, for example a peer order that would have cost crossings, `render` says so in a `note` line. `render --elk` draws the same diagram with Mermaid's ELK layout, for comparison.
+
+### In a web page
+
+The engine registers as a Mermaid 12 layout named `semantic`:
+
+```js
+import mermaid from 'mermaid';
+import { install } from 'semantic-mermaid';
+
+const semantic = install(mermaid);           // registers the "semantic" layout
+mermaid.initialize({ layout: 'semantic' });
+const { svg } = await mermaid.render('d1', source);
+semantic.report('d1');                       // what the engine understood and chose
+```
+
+Mermaid strips comments before layout, so `install` wraps `mermaid.render` to hand each diagram's source to the engine. Diagrams drawn through `mermaid.run` with the `semantic` layout still get it, with their meaning inferred from structure.
+
+### From Node
+
+```js
+import { checkDiagram } from 'semantic-mermaid/check';
+
+const report = await checkDiagram(source);   // what the engine understood, and problems; no browser
+```
+
+```js
+import { createRenderer } from 'semantic-mermaid/toolchain';
+
+const renderer = await createRenderer();
+const { svg, png, report } = await renderer.render(source, { png: true });
+await renderer.close();
+```
+
+## How it works
+
+![The engine's pipeline: Mermaid source, Mermaid parses it, facts (declared, then inferred, with the directives as a side input), candidate layouts, score each and keep the best, Mermaid draws the winner, SVG and report.](examples/pipeline.png)
+
+1. **Facts.** The engine reads the directives and binds them to the diagram's boxes and arrows, reporting any that don't match. Whatever the author didn't declare is inferred from structure. The result, the facts, is what the engine knows about the diagram's meaning ([src/facts](src/facts/resolve.js)).
+2. **Candidates.** It builds a handful of layouts from the facts ([src/engine/layout.js](src/engine/layout.js)). Most are configurations of Mermaid's own ELK layout: a straightened main path, arrows that leave decisions from fixed corners, side boxes beside their step, retries reversed into returns, peers in order. Declared lanes get a swimlane layout of their own ([src/engine/lanes.js](src/engine/lanes.js)). Plain ELK is always one of the candidates.
+3. **Score.** Each candidate is measured: arrows through boxes, crossings, label clashes, crowded arrow ends, length, bends, shape, and how straight the main path is ([src/engine/score.js](src/engine/score.js)). The lowest score wins. A candidate that leaves out declared lanes or side groups pays a penalty, so it wins only by a clear margin.
+4. **Draw.** Mermaid draws the winner. The repository keeps a copy of Mermaid's ELK plugin, `@mermaid-js/layout-elk`, with two small patches that let the engine hand Mermaid its layout ([vendor/layout-elk](vendor/layout-elk/VENDORED.md)). Colours are applied by role, and styles the author set are kept.
+
+
+
+## How well it works
+
+- **Diagrams where meaning matters.** 20 flowcharts with parties, retries, exits and reference material were drawn twice from the same annotated source, once by Mermaid's ELK layout and once by Semantic Mermaid. Two Claude agents annotated 15 of them using only the skill and the CLI; the engine's author annotated the other 5. Blind panels of Claude Sonnet compared each pair with colours off, once in each order, and a win needed both panels to agree. Semantic Mermaid won 15, lost none and tied 5 (a tie is a pair both panels called even, or one they disagreed on). All three diagrams drawn as swimlanes won, and five of their six verdicts were the strongest grade, "much better".
+- **Ordinary diagrams.** On 236 flowcharts, real ones from public repositories plus synthetic test diagrams, every diagram, written in plain Mermaid without directives, renders without errors. Against ELK, arrow crossings fall from 443 to 429, and crowded arrow ends (combs, stacked arrowheads) from 982 to 774.
+- **Speed.** A check parses only and takes about 0.1 s from the command line. The median render takes 87 ms in the browser, against 34 ms for plain ELK, because the engine lays the diagram out several times.
+
+The judges are language models, one panel for each order, and the 20 diagrams were chosen to show the patterns the engine acts on, so read the first result as a showcase. On ordinary diagrams the goal is to stay at least even with ELK. Mermaid's default layout, dagre, was not part of these comparisons.
+
+## Limits
+
+- Flowcharts only (`flowchart` and `graph`). Other Mermaid diagram types are drawn as usual.
+- Lanes need a top-down or left-to-right diagram and top-level groups that hold boxes only, and the diagram can't have other groups besides the lanes.
+- A box beside its step must be in the same group as the step, and the arrow between them can carry a label of at most 24 characters.
+- Automatic colours are tuned for Mermaid's light themes and switch off for the others.
+- The vendored plugin ties the engine to Mermaid 12.1.
+
+
+
+## Development
+
+From a clone of this repository:
+
+```bash
+npm install && node toolchain/cli.js setup
+```
+
+```bash
+npm test             # unit tests and browser integration tests
+```
+
+```bash
+npm run check-types  # JSDoc types, strict mode
+```
+
+```bash
+npm run images       # regenerate docs/images and the example pictures from examples/
+```
+
+```bash
+node scripts/compare.js path/to/diagrams --out /tmp/compare   # every diagram in a folder, both layouts
+```
+
+```bash
+npm run vendor       # refresh vendor/layout-elk from node_modules and apply the patches
+```
+
+## License
+
+MIT. The vendored plugin in [vendor/layout-elk](vendor/layout-elk) is part of Mermaid and keeps Mermaid's MIT license.

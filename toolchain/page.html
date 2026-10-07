@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>html, body { margin: 0; background: #fff } #stage { display: inline-block; padding: 16px; background: #fff }</style>
+</head>
+<body>
+<div id="stage"></div>
+<script type="module">
+  // The toolchain's render page: Mermaid plus the semantic engine, driven from Node through Playwright.
+  import mermaid from '/mermaid/mermaid.esm.min.mjs';
+  import elkLayouts from '/vendor/layout-elk/mermaid-layout-elk.esm.mjs';
+  import { install } from '/src/index.js';
+
+  // plain ELK is registered too, so the toolchain can draw a baseline for comparison
+  mermaid.registerLayoutLoaders(elkLayouts);
+  const semantic = install(mermaid);
+  const stage = document.getElementById('stage');
+  let counter = 0;
+
+  /**
+   * Render one diagram into the stage.
+   * @param {string} source Mermaid or Semantic Mermaid text
+   * @param {{ layout?: 'semantic' | 'elk', colors?: boolean, candidate?: string }} options
+   */
+  window.renderDiagram = async (source, options = {}) => {
+    const layout = options.layout ?? 'semantic';
+    // a fixed seed for the rough.js outlines Mermaid draws for some shapes, so the same source always
+    // gives the same SVG (the layout itself has no randomness)
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default', layout, handDrawnSeed: 1 });
+    semantic.configure({ colors: options.colors !== false, candidate: options.candidate });
+    const id = `diagram-${counter++}`;
+    const started = performance.now();
+    const { svg } = await mermaid.render(id, source);
+    const ms = performance.now() - started;
+    stage.innerHTML = svg;
+    const element = stage.querySelector('svg');
+    const box = element.viewBox.baseVal;
+    element.setAttribute('width', String(box.width));
+    element.setAttribute('height', String(box.height));
+    element.style.maxWidth = 'none';
+    return { svg: stage.innerHTML, report: layout === 'semantic' ? semantic.report(id) : null, width: box.width, height: box.height, ms };
+  };
+  window.semanticMermaidReady = true;
+</script>
+</body>
+</html>

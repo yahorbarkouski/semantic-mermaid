@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph EMP[Employee]
+        E1([Accept offer])
+        E2[Fill in personal data]
+        E3[Sign contract]
+        E4[Fix missing documents]
+        E5([First day])
+    end
+    subgraph HR[HR]
+        H1[Create employee record]
+        H2{Documents complete?}
+        H3[Send contract]
+        H4[Schedule orientation]
+    end
+    subgraph IT[IT]
+        T1[Create accounts]
+        T2[Ship laptop]
+        T3[Grant system access]
+    end
+    E1 --> H1 --> E2 --> H2
+    H2 -->|No| E4 --> H2
+    H2 -->|Yes| H3 --> E3 --> H4 --> E5
+    H1 --> T1 --> T2 --> E5
+    E3 --> T3 --> E5
+
+    %% @lanes EMP HR IT
+    %% @main E1 H1 E2 H2 H3 E3 H4 E5

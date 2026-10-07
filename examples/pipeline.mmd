@@ -1,0 +1,11 @@
+flowchart LR
+  src([Mermaid source]) --> parse[Mermaid parses it]
+  parse --> facts[Facts: declared, then inferred]
+  dir[(Directives from the comments)] -.-> facts
+  facts --> cands[Candidate layouts]
+  cands --> score[Score each, keep the best]
+  score --> draw[Mermaid draws the winner]
+  draw --> out([SVG and report])
+
+  %% @main src parse facts cands score draw out
+  %% @side dir

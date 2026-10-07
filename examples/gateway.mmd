@@ -1,0 +1,22 @@
+flowchart LR
+    Request[Incoming request] --> Log[Request logger]
+    Log --> Cors[CORS check]
+    Cors --> Rate{Rate limit<br/>exceeded?}
+    Rate -->|Yes| R429[429 Too many requests]
+    Rate -->|No| Authn{Authenticated?}
+    Authn -->|No| R401[401 Unauthorized]
+    Authn -->|Yes| Authz{Authorized?}
+    Authz -->|No| R403[403 Forbidden]
+    Authz -->|Yes| Valid{Body valid?}
+    Valid -->|No| R422[422 Unprocessable]
+    Valid -->|Yes| Handler[Route handler]
+    Handler --> Ok[200 OK]
+    R429 --> Out[Response logger]
+    R401 --> Out
+    R403 --> Out
+    R422 --> Out
+    Ok --> Out
+    Out --> Client[Client]
+
+    %% @main Request Log Cors Rate Authn Authz Valid Handler Ok Out Client
+    %% @exit Rate -> R429, Authn -> R401, Authz -> R403, Valid -> R422

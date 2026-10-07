@@ -1,0 +1,28 @@
+flowchart TB
+    subgraph UA[Browser]
+        B1[Open protected app URL]
+        B2[Follow redirect to IdP]
+        B3[Submit credentials / MFA]
+        B4[POST SAML response to app]
+    end
+    subgraph SP[Service provider]
+        S1[Detect no session]
+        S2[Build AuthnRequest]
+        S3[Validate signature and assertion]
+        S4[Create session cookie]
+    end
+    subgraph IdP[Identity provider]
+        I1[Parse AuthnRequest]
+        I2{Existing IdP session?}
+        I3[Authenticate user]
+        I4[Generate signed assertion]
+    end
+    B1 --> S1 --> S2 --> B2 --> I1 --> I2
+    I2 -->|No| I3
+    I3 --> B3 --> I3
+    I2 -->|Yes| I4
+    I3 --> I4 --> B4 --> S3 --> S4 --> B1
+
+    %% @lanes UA SP IdP
+    %% @main B1 S1 S2 B2 I1 I2 I4 B4 S3 S4
+    %% @retry S4 -> B1

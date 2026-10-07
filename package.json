@@ -1,0 +1,51 @@
+{
+  "name": "semantic-mermaid",
+  "version": "0.1.0",
+  "description": "Mermaid flowcharts laid out by what they mean: directives an agent writes in comments, a layout engine that reads them, and a CLI to check and render.",
+  "keywords": [
+    "mermaid",
+    "flowchart",
+    "diagram",
+    "layout",
+    "elk",
+    "swimlanes",
+    "agents"
+  ],
+  "author": "Yahor Barkouski",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "semantic-mermaid": "toolchain/cli.js"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./language": "./src/language/directives.js",
+    "./check": "./toolchain/check.js",
+    "./toolchain": "./toolchain/render.js"
+  },
+  "files": [
+    "src",
+    "toolchain",
+    "vendor",
+    "skill",
+    "docs/LANGUAGE.md"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "check-types": "tsc -p jsconfig.json",
+    "images": "node scripts/readme-images.js",
+    "vendor": "node scripts/vendor-layout-elk.js"
+  },
+  "engines": {
+    "node": ">=20.6"
+  },
+  "dependencies": {
+    "mermaid": "12.1.0",
+    "playwright": "^1.63.0"
+  },
+  "devDependencies": {
+    "@mermaid-js/layout-elk": "1.0.1",
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.0"
+  }
+}

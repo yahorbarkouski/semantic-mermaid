@@ -1,0 +1,13 @@
+flowchart TD
+  A([Order placed]) --> B{Payment ok?}
+  B -->|yes| C[Reserve stock]
+  C --> D{In stock?}
+  D -->|yes| E[Ship] --> F([Done])
+  D -->|no| G[Backorder]
+  G --> D
+  B -->|no| X[Notify customer]
+  R[(Fraud rules)] -.-> B
+  %% @main A B C D E F
+  %% @exit B -> X
+  %% @retry G -> D
+  %% @side R
