@@ -12,7 +12,7 @@ We tested Semantic Mermaid on 236 flowcharts, where it drew fewer arrow crossing
 
 *The same source ([examples/sign-in.mmd](examples/sign-in.mmd)) drawn by Mermaid's ELK layout (left) and by Semantic Mermaid (right)*
 
-**Contents:** [How the extension looks like](#how-the-extension-looks-like) · [Directives](#directives) · [Auto-sized for the page](#auto-sized-for-the-page) · [Get started](#get-started) · [More examples](#more-examples) · [Compared with Mermaid's swimlanes](#compared-with-mermaids-swimlanes) · [How it works](#how-it-works) · [How well it works](#how-well-it-works) · [Limits](#limits) · [Development](#development)
+**Contents:** [How the extension looks like](#how-the-extension-looks-like) · [Directives](#directives) · [Auto-sized for the page](#auto-sized-for-the-page) · [Get started](#get-started) · [More examples](#more-examples) · [Compared with Mermaid's swimlanes](#compared-with-mermaids-swimlanes) · [How it works](#how-it-works) · [How we tested](#how-we-tested) · [Limits](#limits) · [Development](#development)
 
 ## How the extension looks like
 
@@ -231,23 +231,17 @@ Mermaid 11.16 added a swimlane diagram of its own, `swimlane-beta`, written like
 
 
 
-## How well it works
+## How we tested
 
-- **Diagrams where meaning matters.** 20 flowcharts with parties, retries, exits and reference material were drawn twice from the same annotated source, once by Mermaid's ELK layout and once by Semantic Mermaid. Two Claude agents annotated 15 of them using only the skill and the CLI; the engine's author annotated the other 5. Blind panels of Claude Sonnet compared each pair with colours off, once in each order, and a win needed both panels to agree. Semantic Mermaid won 15, lost none and tied 5 (a tie is a pair both panels called even, or one they disagreed on). All three diagrams drawn as swimlanes won, and five of their six verdicts were the strongest grade, "much better".
-- **Ordinary diagrams.** On 236 flowcharts, real ones from public repositories plus synthetic test diagrams, written in plain Mermaid without directives, every diagram that Mermaid itself can parse renders without errors; the other two put a comment line above their frontmatter, which Mermaid rejects. Against ELK, arrow crossings fall from 443 to 430, and crowded arrow ends (combs, stacked arrowheads) from 982 to 776.
-- **Speed.** A check parses only and takes about 0.15 s from the command line. In the browser, the median render of the 236 flowcharts takes 60 ms, against 34 ms for plain ELK, because the engine lays each diagram out several times.
-
-The judges are language models, one panel for each order, and the 20 diagrams were chosen to show the patterns the engine acts on, so read the first result as a showcase. Two of the 20 drawings have changed since they were judged, both with a straighter main path. On ordinary diagrams the goal is to stay at least even with ELK. ELK is Mermaid 12's default flowchart layout; dagre, the default before Mermaid 12, was not part of these comparisons.
+- **The 20 judged diagrams** have parties, retries, exits and reference material. Agents wrote the directives for 15 of them using only the skill and the CLI; the engine's author wrote the other 5. Each was drawn from the same source by Semantic Mermaid and by ELK, Mermaid 12's default layout, with colours off. Two panels of Claude Sonnet judged each pair blind, one panel for each order, and a win needed both to agree; a pair they split on, or both called even, counts as a tie. All three swimlane diagrams won, five of their six verdicts "much better". Two of the 20 drawings have changed since they were judged, both with a straighter main path.
+- **The 236 ordinary flowcharts** are real ones from public repositories plus synthetic test diagrams, written without directives. Against ELK, arrow crossings fall from 443 to 430 and crowded arrow ends from 982 to 776. Every diagram that Mermaid itself can parse renders; two of the 236 put a comment line above their frontmatter, which Mermaid rejects. Dagre, the default before Mermaid 12, was not compared.
+- **Speed.** A check takes about 0.15 s from the command line. In the browser, a typical diagram renders in about 32 ms, against about 21 ms for ELK.
 
 ## Limits
 
-- Flowcharts only (`flowchart` and `graph`). With `install`'s `apply` option, other diagram types keep Mermaid's configured layout; with `layout: 'semantic'` set in Mermaid's configuration, they get Mermaid's ELK layout, and mindmaps fail to render as they do under ELK.
-- Lanes need top-level groups that hold boxes only, and the diagram can't have other groups besides the lanes. A bottom-up or right-to-left diagram gets its lanes drawn top-down or left-to-right.
-- A box beside its step must be in the same group as the step, the arrow between them can carry a label of at most 24 characters, and at most two boxes sit beside one step. `check` warns when a declared box breaks these limits.
-- Automatic colours have a light and a dark palette, chosen by Mermaid's theme; under `forest` they switch off.
-- The vendored plugin ties the engine to Mermaid 12.1, and the CLI needs Node 22.12 or later, as Mermaid 12.1 does.
-
-
+- Flowcharts only (`flowchart` and `graph`); other diagram types keep Mermaid's own layout. [docs/EMBEDDING.md](docs/EMBEDDING.md) has the details for apps.
+- Mermaid 12.1 only, because the engine drives a patched copy of its ELK plugin. The CLI needs Node 22.12 or later, as Mermaid 12.1 does.
+- Each directive's rules, such as what a lane may hold, are in [docs/LANGUAGE.md](docs/LANGUAGE.md), and `check` says when a diagram breaks one.
 
 ## Development
 
