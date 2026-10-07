@@ -1,0 +1,30 @@
+flowchart TD
+  subgraph Browser
+    open([Open dashboard])
+    render[Render widgets]
+    done([Dashboard shown])
+  end
+  subgraph API[API server]
+    handler[Dashboard handler]
+    merge[Merge results]
+  end
+  subgraph Auth[Auth service]
+    verify{Token valid?}
+  end
+  subgraph Data[Database]
+    widgets[(Widgets)]
+    prefs[(Preferences)]
+  end
+  open -->|1. GET /dashboard| handler
+  handler -->|2. verify token| verify
+  verify -->|3. user id| handler
+  verify -->|expired| login([Sign in again])
+  handler -->|4. query| widgets
+  widgets -->|5. rows| merge
+  handler -->|6. query| prefs
+  prefs -->|7. settings| merge
+  merge -->|8. JSON| render --> done
+
+  %% @lanes Browser API Auth Data
+  %% @main open handler widgets merge render done
+  %% @exit verify -> login

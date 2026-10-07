@@ -1,7 +1,7 @@
 // Render the documentation's pictures: every diagram in examples/ drawn by Mermaid's ELK layout and by
 // the semantic layout side by side (one above the other for wide drawings), as examples/<name>.png
 // beside its source; docs/images/page-fit.png, a wide diagram on a page as written and as render draws
-// it for the page; docs/images/swimlanes.png, the expense example as Mermaid's own swimlane diagram
+// it for the page; docs/images/swimlanes.png, the dashboard example as Mermaid's own swimlane diagram
 // and with @lanes; and docs/images/pipeline.png, the engine's own pipeline for the README. The comparisons draw each layout at its own width, for no page.
 //
 //   npm run images
@@ -60,10 +60,10 @@ try {
   await page.locator('.figure').screenshot({ path: path.join(OUT, 'page-fit.png') });
   console.log(`docs/images/page-fit.png  (${fitted.report?.layout?.chosen})`);
 
-  // the swimlane figure: the expense example as Mermaid's own swimlane diagram, and with @lanes
-  const expense = fs.readFileSync(path.join(EXAMPLES, 'expense.mmd'), 'utf8');
-  const swimlane = await renderer.render(expense.replace(/^flowchart TD/m, 'swimlane-beta TD'), { fit: false });
-  const lanes = await renderer.render(expense, { fit: false });
+  // the swimlane figure: the dashboard example as Mermaid's own swimlane diagram, and with @lanes
+  const dashboard = fs.readFileSync(path.join(EXAMPLES, 'dashboard.mmd'), 'utf8');
+  const swimlane = await renderer.render(dashboard.replace(/^flowchart TD/m, 'swimlane-beta TD'), { fit: false });
+  const lanes = await renderer.render(dashboard, { fit: false });
   await page.setContent(`<style>${STYLE}</style><div class="figure across">${panel('Mermaid · swimlane-beta', swimlane.svg, 'elk')}${panel('Semantic Mermaid · @lanes', lanes.svg, 'ours')}</div>`);
   await page.locator('.figure').screenshot({ path: path.join(OUT, 'swimlanes.png') });
   console.log('docs/images/swimlanes.png');

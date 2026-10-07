@@ -20,6 +20,12 @@ Each example is a Mermaid source file with Semantic Mermaid directives, next to 
 
 ![An expense claim drawn by ELK and in three lanes](expense.png)
 
+## [dashboard.mmd](dashboard.mmd): four lanes with requests and replies
+
+`@lanes Browser API Auth Data`, a declared main path and one `@exit`. A dashboard page load passes from the browser to the API server, which checks the token with the auth service and queries two tables; the auth service's reply goes back to the handler that asked, and an expired token ends at "Sign in again", outside the lanes. [Compared with Mermaid's swimlanes](../README.md#compared-with-mermaids-swimlanes) draws it with `swimlane-beta` as well.
+
+![A dashboard page load drawn by ELK and in four lanes](dashboard.png)
+
 ## [onboarding.mmd](onboarding.mmd): swimlanes, left to right
 
 `@lanes EMP HR IT`. In a left-to-right diagram the lanes are rows and time runs right.
