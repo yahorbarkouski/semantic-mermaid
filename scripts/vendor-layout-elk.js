@@ -1,5 +1,5 @@
-// Copies Mermaid's ELK layout plugin into vendor/layout-elk and patches it in two places, so the
-// semantic engine can lay out the ELK graph Mermaid builds before Mermaid draws it.
+// Copies Mermaid's ELK layout plugin into vendor/layout-elk and patches it in four places, so the
+// semantic engine can lay out the ELK graph Mermaid builds before Mermaid draws it, quickly.
 //
 //   npm run vendor
 //
@@ -7,7 +7,9 @@
 //    `globalThis.__semanticMermaidLayout(elkGraph, elk)` when that function is set.
 // 2. Mermaid fits every group frame to its content after layout; a group the engine marks with
 //    `semanticFrame: true` (a swimlane) keeps the frame the engine gave it.
-// With the hook unset and no group marked, the vendored plugin behaves exactly like the published one.
+// 3-4. Messages to and from ELK's in-page worker pass in microtasks instead of setTimeout(0), which
+//    browsers delay by 4 ms once timers nest; a semantic render runs ELK several times.
+// With the hook unset and no group marked, the vendored plugin lays out exactly like the published one.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,6 +36,29 @@ const PATCHES = [
       '    // semantic-mermaid: swimlanes keep the frames the semantic engine gave them',
       '    if (!elkNode?.isGroup || elkNode.semanticFrame) {',
     ].join('\n'),
+  },
+  // elkjs passes every message between its caller and its in-page worker through setTimeout(0); the
+  // browser clamps nested timers to 4 ms, which left a third of each semantic render (several ELK runs)
+  // idle. A microtask hands the message on at once; the layouts are unchanged.
+  {
+    what: 'the answer from ELK\'s in-page worker is handed on in a microtask instead of setTimeout(0)',
+    anchor: 'setTimeout(function() {\n                _this2.receive(_this2, answer);\n              }, 0);',
+    replacement: [
+      '// semantic-mermaid: a microtask, which the browser does not delay as it does nested timers',
+      'queueMicrotask(function() {',
+      '  _this2.receive(_this2, answer);',
+      '});',
+    ].join('\n              '),
+  },
+  {
+    what: 'a message to ELK\'s in-page worker is dispatched in a microtask instead of setTimeout(0)',
+    anchor: 'setTimeout(function() {\n                    c10.dispatcher.saveDispatch({ data: a10 });\n                  }, 0);',
+    replacement: [
+      '// semantic-mermaid: a microtask, which the browser does not delay as it does nested timers',
+      'queueMicrotask(function() {',
+      '  c10.dispatcher.saveDispatch({ data: a10 });',
+      '});',
+    ].join('\n                  '),
   },
 ];
 

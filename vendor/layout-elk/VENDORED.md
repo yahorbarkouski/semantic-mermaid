@@ -4,3 +4,5 @@ It is part of Mermaid (https://github.com/mermaid-js/mermaid) and keeps its MIT 
 Changes, each marked `semantic-mermaid:` in the code:
 - chunks/mermaid-layout-elk.esm/elk-KGXXK6EI.mjs: the layout call defers to globalThis.__semanticMermaidLayout when it is set
 - chunks/mermaid-layout-elk.esm/elk-KGXXK6EI.mjs: groups marked `semanticFrame` keep the frame the layout gave them
+- chunks/mermaid-layout-elk.esm/elk-KGXXK6EI.mjs: the answer from ELK's in-page worker is handed on in a microtask instead of setTimeout(0)
+- chunks/mermaid-layout-elk.esm/elk-KGXXK6EI.mjs: a message to ELK's in-page worker is dispatched in a microtask instead of setTimeout(0)

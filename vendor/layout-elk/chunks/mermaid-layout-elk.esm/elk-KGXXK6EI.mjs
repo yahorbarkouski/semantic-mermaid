@@ -537,9 +537,10 @@ var require_elk_bundled = __commonJS({
             this.resolvers = {};
             this.worker = worker;
             this.worker.onmessage = function(answer) {
-              setTimeout(function() {
+              // semantic-mermaid: a microtask, which the browser does not delay as it does nested timers
+              queueMicrotask(function() {
                 _this2.receive(_this2, answer);
-              }, 0);
+              });
             };
           }
           __name(PromisedWorker2, "PromisedWorker");
@@ -63465,9 +63466,10 @@ var require_elk_bundled = __commonJS({
                   c10.onmessage({ data: a10 });
                 }, "postMessage") });
                 this.postMessage = function(a10) {
-                  setTimeout(function() {
+                  // semantic-mermaid: a microtask, which the browser does not delay as it does nested timers
+                  queueMicrotask(function() {
                     c10.dispatcher.saveDispatch({ data: a10 });
-                  }, 0);
+                  });
                 };
               }
               __name(j10, "j");
