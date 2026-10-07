@@ -102,6 +102,13 @@ async function main() {
     console.log(USAGE);
     return command && !values.help ? 2 : 0;
   }
+  // Mermaid is a peer dependency, which some installers (yarn 1, --legacy-peer-deps) leave out
+  try {
+    createRequire(import.meta.url).resolve('mermaid');
+  } catch {
+    console.error('semantic-mermaid needs the mermaid package beside it: npm install -g mermaid@~12.1.0');
+    return 1;
+  }
   if (file !== '-' && !fs.existsSync(file)) {
     console.error(`${file}: no such file`);
     return 2;
@@ -161,8 +168,12 @@ async function main() {
     const errors = report?.diagnostics.some((d) => d.severity === 'error');
     if (!errors) {
       for (const out of outs) {
-        fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-        fs.writeFileSync(out, /\.png$/i.test(out) ? /** @type {Buffer} */ (rendered.png) : withSource(compactPaths(rendered.svg), source));
+        try {
+          fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+          fs.writeFileSync(out, /\.png$/i.test(out) ? /** @type {Buffer} */ (rendered.png) : withSource(compactPaths(rendered.svg), source));
+        } catch (error) {
+          return fail(`-o ${out}: ${/** @type {Error} */ (error).message}`);
+        }
       }
       if (!values.json) console.log(`wrote ${outs.join(' and ')} (${Math.round(rendered.width)}x${Math.round(rendered.height)})`);
     }

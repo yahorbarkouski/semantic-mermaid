@@ -28,6 +28,7 @@ jobs:
           npm pack
           npm install -g ./semantic-mermaid-*.tgz
           semantic-mermaid --version
+          semantic-mermaid setup
           semantic-mermaid render - -o "$RUNNER_TEMP/check.svg" <<'MMD'
           flowchart TD
             A --> B
