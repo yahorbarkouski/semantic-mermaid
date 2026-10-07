@@ -59,6 +59,14 @@ test('automatic colours follow roles and leave author styles alone', async () =>
   assert.doesNotMatch(off.svg, /fill:#FDF2F2/);
 });
 
+test('other diagram types drawn with the semantic layout get plain ELK', async () => {
+  for (const source of ['stateDiagram-v2\n  [*] --> Idle\n  Idle --> Busy: job\n  Busy --> [*]', 'classDiagram\n  Animal <|-- Dog\n  Dog : +bark()']) {
+    const { svg, report } = await renderer.render(source);
+    assert.match(svg, /<svg/);
+    assert.equal(report ?? null, null); // the engine did not run
+  }
+});
+
 test('a declared side group sits beside the step it feeds', async () => {
   const { svg, report } = await renderer.render(fs.readFileSync(new URL('./fixtures/documents.mmd', import.meta.url), 'utf8'));
   assert.ok(report?.understood.includes('side group: Reference feeds Extract (declared)'));

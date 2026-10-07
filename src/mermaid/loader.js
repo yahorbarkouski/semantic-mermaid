@@ -47,6 +47,8 @@ export function createSemanticLayout(state) {
 
   async function renderOne(data4Layout, svg, helpers, options) {
     const { render: elkRender } = await elk.loader();
+    // the engine reads flowcharts; other diagram types drawn with this layout get Mermaid's plain ELK
+    if (data4Layout.type !== 'flowchart-v2') return elkRender(data4Layout, svg, helpers, { ...options, algorithm: 'elk.layered' });
     const id = data4Layout.diagramId;
     const source = state.sources.get(id);
     const { annotations, diagnostics, count } = parseDirectives(source);
