@@ -22,7 +22,7 @@ import { createRequire } from 'node:module';
 import { parseArgs } from 'node:util';
 import { formatStatus } from './report.js';
 import { checkDiagram, directivesIgnored } from './check.js';
-import { withSource, sourceOf } from './source.js';
+import { withSource, sourceOf, compactPaths } from './source.js';
 
 const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
@@ -43,6 +43,10 @@ function setup() {
 
 /** @param {string} file */
 function printSource(file) {
+  if (!fs.existsSync(file)) {
+    console.error(`${file}: no such file`);
+    return 2;
+  }
   const text = sourceOf(fs.readFileSync(file, 'utf8'));
   if (text === null) {
     console.error(`${file}: no diagram text inside; only SVGs written by semantic-mermaid render carry it`);
@@ -104,7 +108,12 @@ async function main() {
     else console.error(`${name}: ${message}`);
     return status;
   };
-  const failed = (/** @type {unknown} */ error) => fail(`Mermaid could not ${command === 'check' ? 'parse' : 'render'} the diagram:\n  ${/** @type {Error} */ (error).message}`);
+  const failed = (/** @type {unknown} */ error) => {
+    const message = String(/** @type {Error} */ (error)?.message ?? error);
+    // Mermaid's syntax errors read the same from check and render
+    const parse = command === 'check' || /^(Parse|Lexical) error|No diagram type detected/.test(message);
+    return fail(`Mermaid could not ${parse ? 'parse' : 'render'} the diagram:\n  ${message}`);
+  };
   /** @param {import('./report.js').Report | null} report @param {object} [extra] */
   const finish = (report, extra = {}) => {
     const errors = report?.diagnostics.filter((d) => d.severity === 'error') ?? [];
@@ -147,7 +156,7 @@ async function main() {
     if (!errors) {
       for (const out of outs) {
         fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-        fs.writeFileSync(out, /\.png$/i.test(out) ? /** @type {Buffer} */ (rendered.png) : withSource(rendered.svg, source));
+        fs.writeFileSync(out, /\.png$/i.test(out) ? /** @type {Buffer} */ (rendered.png) : withSource(compactPaths(rendered.svg), source));
       }
       if (!values.json) console.log(`wrote ${outs.join(' and ')} (${Math.round(rendered.width)}x${Math.round(rendered.height)})`);
     }

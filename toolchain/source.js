@@ -1,6 +1,7 @@
-// The diagram's text inside the SVG that render writes, so a delivered diagram can be changed later
-// without a separate source file. It sits in an SVG <metadata> element, which browsers and image
-// viewers do not draw.
+// What render writes into an SVG file: the diagram's text, so a delivered diagram can be changed
+// later without a separate source file (in a <metadata> element, which browsers and image viewers
+// do not draw), and path data rounded to hundredths of a pixel. Mermaid draws some shapes through
+// rough.js, which writes every coordinate with 15 or more decimals: three rounded boxes took 90 KB.
 
 const OPEN = '<metadata id="semantic-mermaid-source">';
 const CLOSE = '</metadata>';
@@ -29,4 +30,12 @@ export function sourceOf(svg) {
   if (start < 0) return null;
   const end = svg.indexOf(CLOSE, start);
   return end < 0 ? null : unescape(svg.slice(start + OPEN.length, end));
+}
+
+/**
+ * The SVG with the numbers in its path data rounded to two decimals; nothing else changes.
+ * @param {string} svg
+ */
+export function compactPaths(svg) {
+  return svg.replace(/ d="([^"]*)"/g, (_, d) => ` d="${d.replace(/-?\d+\.\d{3,}/g, (n) => String(Math.round(Number(n) * 100) / 100))}"`);
 }

@@ -7,7 +7,7 @@ compatibility: Checking and rendering use the semantic-mermaid CLI from npm, whi
 
 # Semantic Mermaid
 
-Semantic Mermaid is Mermaid flowchart syntax plus comment lines that say what the diagram means. A layout engine reads them: the main path is kept in one line, exits sit beside their decision, retries are drawn as returns, side boxes sit beside the step they serve, and parties become swimlanes. The lines are `%%` comments, so the diagram still renders anywhere Mermaid does, and a wrong directive cannot break it.
+Semantic Mermaid is Mermaid flowchart syntax plus comment lines that say what the diagram means. A layout engine reads them: the main path is drawn as one line wherever it can be, exits sit beside their decision, retries are drawn as returns, side boxes sit beside the step they serve, and parties become swimlanes. The lines are `%%` comments, so the diagram still renders anywhere Mermaid does, and a wrong directive cannot break it.
 
 You know what the diagram means when you write it. State all of it, and the engine does the geometry. Never position boxes yourself or adjust the layout by trial and error.
 
@@ -38,7 +38,16 @@ You know what the diagram means when you write it. State all of it, and the engi
    - A place that takes only text, such as a pull-request or issue description, a comment, or a Notion page: put the diagram in a `mermaid` code block. The host draws it with its own layout, and the directives stay in it for anyone who renders it later.
    - A chat or a terminal: the diagram is temporary, so render it to a temporary file, `semantic-mermaid render - -o "$(mktemp -d)/order.png" <<'MMD'`, and share the PNG at the path `render` prints. Include the Mermaid text in your reply if the user may want to change it.
 
-   There is no need to open the image yourself. If `render` says the browser is not installed, run `semantic-mermaid setup` once (it downloads about 95 MB). In PowerShell, pipe a here-string instead of a heredoc, `@'…'@ | semantic-mermaid check -`, and write temporary files under `$env:TEMP`.
+   There is no need to open the image yourself. If `render` says the browser is not installed, ask the user whether to run `semantic-mermaid setup`, which downloads about 95 MB once.
+
+   In PowerShell, pipe a here-string instead of a heredoc, with `@'` ending its first line and `'@` starting its last, and write temporary files under `$env:TEMP`:
+
+   ```
+   @'
+   flowchart TD
+     A --> B
+   '@ | semantic-mermaid check -
+   ```
 
 The CLI is the npm package `semantic-mermaid`. If the `semantic-mermaid` command is missing, ask the user whether to install it with `npm install -g semantic-mermaid`. If they decline, deliver the diagram in a `mermaid` code block.
 
@@ -64,6 +73,7 @@ The CLI is the npm package `semantic-mermaid`. If the `semantic-mermaid` command
 - `@lanes`: when work passes back and forth between parties (people, teams, services), put each party's steps in a top-level `subgraph` and name the subgraphs in order. Use `flowchart TD` for lanes as columns, `LR` for lanes as rows. Lanes hold boxes only, no nested subgraphs, and the diagram has no other subgraphs. Stages a process passes through once (data, training, serving) are not lanes: keep them as plain subgraphs.
 - Keep labels on arrows to exit boxes and side boxes at 24 characters or fewer, and put at most two boxes beside one step; otherwise the box cannot sit beside its step. `check` warns about both.
 - Wrap a label that contains punctuation such as `(`, `)`, `:` or `#` in double quotes, `A["Pay (card)"]`, and write a double quote inside a label as `#quot;`.
+- A chain of more than about 15 steps reads better as `flowchart LR`, or split into several diagrams.
 - Put directives after the `flowchart` line, for example at the end. Frontmatter (`---`) must stay first.
 
 ## Example
