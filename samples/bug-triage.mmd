@@ -1,0 +1,16 @@
+flowchart TD
+  Report([Bug reported]) --> Repro{Can reproduce?}
+  Repro -->|yes| Severity{Critical?}
+  Severity -->|yes| Hotfix[Ship hotfix]
+  Hotfix --> Verify[Verify fix]
+  Verify --> Close([Closed])
+  Severity -->|no| Backlog[Add to backlog]
+  Backlog --> Close
+  Repro -->|no| NeedInfo[Request more info]
+  NeedInfo --> Repro
+  Logs[(Error logs)] -.-> Repro
+  Runbook[(Triage runbook)] -.-> Severity
+
+  %% @main Report Repro Severity Hotfix Verify Close
+  %% @retry NeedInfo -> Repro
+  %% @side Logs Runbook

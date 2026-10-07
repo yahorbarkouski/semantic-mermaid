@@ -1,0 +1,16 @@
+flowchart TD
+  Open([Ticket opened]) --> Triage[Initial triage]
+  Triage --> Known{Known issue?}
+  Known -->|yes| Fix[Apply known fix]
+  Fix --> Resolved{Customer satisfied?}
+  Resolved -->|yes| Close([Ticket closed])
+  Resolved -->|no| Escalate[Escalate to specialist]
+  Escalate --> Investigate[Deep investigation]
+  Investigate --> Fix
+  Known -->|no| Investigate
+  KB[(Knowledge base)] -.-> Known
+  SLA[(SLA timer)] -.-> Triage
+
+  %% @main Open Triage Known Fix Resolved Close
+  %% @retry Escalate -> Investigate
+  %% @side KB SLA

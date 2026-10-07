@@ -1,0 +1,8 @@
+flowchart LR
+  Dev[Dev build] --> QA[QA environment]
+  QA --> Staging[Staging]
+  Staging --> Canary[Canary release]
+  Canary --> Prod[Production]
+
+  %% @main Dev QA Staging Canary Prod
+  %% @peers Dev QA Staging Canary Prod

@@ -1,0 +1,17 @@
+flowchart TD
+  Apply([Apply for loan]) --> KYC[Verify identity]
+  KYC --> Score{Credit score ok?}
+  Score -->|yes| Income{Income sufficient?}
+  Income -->|yes| Approve[Approve loan]
+  Approve --> Fund([Funds disbursed])
+  Income -->|no| Counter[Offer smaller amount]
+  Counter --> Accept{Accepted?}
+  Accept -->|yes| Approve
+  Accept -->|no| Reject1[Application declined]
+  Score -->|no| Reject2[Application declined]
+  Bureau[(Credit bureau)] -.-> Score
+
+  %% @main Apply KYC Score Income Approve Fund
+  %% @exit Score -> Reject2, Accept -> Reject1
+  %% @retry Counter -> Accept
+  %% @side Bureau

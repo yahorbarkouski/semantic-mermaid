@@ -1,0 +1,14 @@
+flowchart TD
+  Start([Customer arrives]) --> Menu[Browse menu]
+  Menu --> Order{Order placed?}
+  Order -->|yes| Pay{Payment ok?}
+  Pay -->|yes| Brew[Brew drink]
+  Brew --> Serve[Serve at counter]
+  Serve --> Done([Enjoy coffee])
+  Pay -->|no| Decline[Decline order]
+  Order -->|no| Leave[Customer leaves]
+  Loyalty[(Loyalty card)] -.-> Pay
+
+  %% @main Start Menu Order Pay Brew Serve Done
+  %% @exit Order -> Leave, Pay -> Decline
+  %% @side Loyalty

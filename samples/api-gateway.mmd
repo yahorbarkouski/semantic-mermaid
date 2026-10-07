@@ -1,0 +1,12 @@
+flowchart LR
+  Req[Incoming request] --> Auth{Authenticated?}
+  Auth -->|yes| Scope{Has scope?}
+  Scope -->|yes| Rate{Within quota?}
+  Rate -->|yes| Route[Route to service]
+  Route --> Ok([200 OK])
+  Auth -->|no| E401[401 Unauthorized]
+  Scope -->|no| E403[403 Forbidden]
+  Rate -->|no| E429[429 Too many requests]
+
+  %% @main Req Auth Scope Rate Route Ok
+  %% @exit Auth -> E401, Scope -> E403, Rate -> E429

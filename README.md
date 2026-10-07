@@ -8,7 +8,7 @@ Mermaid language is awesome, but it was built for a time when humans wrote the c
 
 We still use diagrams to explain and understand things. Mermaid's default layout doesn't know anything about that, it's intentless, so the drawing is often harder to grasp than the source. We extend the syntax with a few lines in comments (%% @main, @exit, @retry, @side, @lanes) that say what the diagram means, run a sophisticated layout engine that draws it that way, and ship tools (CLI/SDK + agent skill) so your agents can render better diagrams effortlessly.
 
-We tried it on 20 diagrams where layout really matters. Blind model judges compared our layout to Mermaid's ELK. Semantic Mermaid won 15, lost 0, tied 5. All three swimlane diagrams won.
+We tried it on 20 diagrams where layout really matters. Blind model judges compared our layout to Mermaid's ELK. Semantic Mermaid won 15, lost 0, tied 5.
 
 ![A SAML sign-in handed between a browser, a service provider and an identity provider, drawn twice. On the left, Mermaid's ELK layout lays the three groups out as separate blocks, and the arrows between them cross, loop around and cut through group titles. On the right, Semantic Mermaid draws three lanes with time running down.](docs/images/sign-in.png)
 

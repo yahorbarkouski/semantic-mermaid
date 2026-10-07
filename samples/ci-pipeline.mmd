@@ -1,0 +1,13 @@
+flowchart TD
+  Push([Git push]) --> Lint[Run linter]
+  Lint --> Tests{Tests pass?}
+  Tests -->|yes| Build[Build artifact]
+  Build --> Deploy{Deploy ok?}
+  Deploy -->|yes| Smoke[Smoke tests]
+  Smoke --> Live([Production])
+  Tests -->|no| Fail1[Notify author]
+  Deploy -->|no| Rollback[Roll back release]
+  Rollback --> Fail2[Page on-call]
+
+  %% @main Push Lint Tests Build Deploy Smoke Live
+  %% @exit Tests -> Fail1, Deploy -> Rollback

@@ -1,0 +1,21 @@
+flowchart LR
+  subgraph Customer
+    C1([Open app])
+    C2[Place order]
+    C3[Track delivery]
+    C4([Meal arrives])
+  end
+  subgraph Restaurant
+    R1[Accept order]
+    R2[Prepare food]
+    R3[Hand to courier]
+  end
+  subgraph Courier
+    D1[Pick up order]
+    D2[Navigate to address]
+    D3[Confirm delivery]
+  end
+  C1 --> C2 --> R1 --> R2 --> R3 --> D1 --> D2 --> D3 --> C3 --> C4
+
+  %% @lanes Customer Restaurant Courier
+  %% @main C1 C2 R1 R2 R3 D1 D2 D3 C3 C4

@@ -1,0 +1,14 @@
+flowchart TD
+  Pick([Select file]) --> Size{Under limit?}
+  Size -->|yes| Scan{Virus scan clean?}
+  Scan -->|yes| Upload[Upload to storage]
+  Upload --> Done([Upload complete])
+  Scan -->|no| Quarantine[Quarantine file]
+  Size -->|no| Compress[Try compression]
+  Compress --> Size
+  Policy[(Upload policy)] -.-> Size
+
+  %% @main Pick Size Scan Upload Done
+  %% @exit Scan -> Quarantine
+  %% @retry Compress -> Size
+  %% @side Policy
