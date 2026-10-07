@@ -17,13 +17,13 @@ With `apply: 'directives'`, a flowchart that contains Semantic Mermaid directive
 
 ## Requirements
 
-- **Mermaid 12.1.** The engine drives a patched copy of Mermaid's ELK layout plugin, `@mermaid-js/layout-elk` 1.0.1, which is tied to Mermaid 12.1's internals. `semantic-mermaid` declares Mermaid `~12.1.0` as a peer dependency.
+- **Mermaid 11 or 12.** The engine registers through the layout-plugin API Mermaid added in version 11, and brings its own patched copy of Mermaid's ELK layout plugin, `@mermaid-js/layout-elk` 1.0.1, so it does not depend on the ELK your app uses. It is tested on Mermaid 11.0, 11.6, 11.12, 11.17, 12.0 and 12.1, and `semantic-mermaid` declares `^11.0.0 || ^12.0.0` as its peer dependency. Mermaid 11 draws boxes in its classic look by default, so the same diagram comes out slightly larger there and the engine sometimes picks a different layout for it.
 - **A browser page.** Mermaid measures text in the DOM. To render on a server, see [Render without a page](#render-without-a-page).
 
 Install both packages:
 
 ```bash
-npm install semantic-mermaid mermaid@~12.1.0
+npm install semantic-mermaid mermaid
 ```
 
 Pass `install` the Mermaid instance your app renders with. The package also installs Playwright, about 18 MB on disk, for its command-line tool; a browser bundle never includes it. Type declarations ship with the package, and every Mermaid `securityLevel` works, `sandbox` included.
@@ -181,7 +181,7 @@ await renderer.close();
 
 ## Limits
 
-- The engine works with Mermaid 12.1 only.
+- The engine works with Mermaid 11 and 12; Mermaid 10 and older have no layout plugins.
 - It lays out flowcharts (`flowchart` and `graph`) only.
 - Diagrams drawn through `mermaid.run` or `startOnLoad` lose their directives, and `apply` can't select them.
 - With `layout: 'semantic'` in Mermaid's configuration, mindmaps fail to render; use `apply` instead.

@@ -65,10 +65,10 @@ function browserProblem(error) {
 }
 
 async function main() {
-  // Mermaid 12.1 needs Node 22.12; older versions fail later with errors that do not say so
+  // Mermaid 12 needs Node 22.12; older versions fail later with errors that do not say so
   const [major, minor] = process.versions.node.split('.').map(Number);
   if (major < 22 || (major === 22 && minor < 12)) {
-    console.error(`semantic-mermaid needs Node 22.12 or later, as Mermaid 12.1 does; this is Node ${process.versions.node}`);
+    console.error(`semantic-mermaid needs Node 22.12 or later, as Mermaid 12 does; this is Node ${process.versions.node}`);
     return 1;
   }
   let parsed;
@@ -108,7 +108,7 @@ async function main() {
   try {
     createRequire(import.meta.url).resolve('mermaid');
   } catch {
-    console.error('semantic-mermaid needs the mermaid package beside it: npm install -g mermaid@~12.1.0');
+    console.error('semantic-mermaid needs the mermaid package beside it: npm install -g mermaid');
     return 1;
   }
   if (file !== '-' && !fs.existsSync(file)) {

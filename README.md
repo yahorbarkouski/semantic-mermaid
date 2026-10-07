@@ -141,7 +141,7 @@ Mermaid 11.16 added a swimlane diagram of its own, `swimlane-beta`, written like
 ## Limits
 
 - Flowcharts only (`flowchart` and `graph`); other diagram types keep Mermaid's own layout. [docs/EMBEDDING.md](docs/EMBEDDING.md) has the details for apps.
-- Mermaid 12.1 only, because the engine drives a patched copy of its ELK plugin. The CLI needs Node 22.12 or later, as Mermaid 12.1 does.
+- Mermaid 11 or 12. The engine brings its own patched copy of Mermaid's ELK plugin, so it works the same whichever version an app uses; it is tested on 11.0 through 12.1, and CI checks the latest 11 and 12. The CLI installs Mermaid 12, so it needs Node 22.12 or later, as Mermaid 12 does.
 - Each directive's rules, such as what a lane may hold, are in [docs/LANGUAGE.md](docs/LANGUAGE.md), and `check` says when a diagram breaks one.
 
 ## Development

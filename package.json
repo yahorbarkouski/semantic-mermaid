@@ -61,7 +61,7 @@
     "node": ">=22.12"
   },
   "peerDependencies": {
-    "mermaid": "~12.1.0"
+    "mermaid": "^11.0.0 || ^12.0.0"
   },
   "dependencies": {
     "playwright": "^1.63.0"
