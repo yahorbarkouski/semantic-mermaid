@@ -49,11 +49,15 @@ test('apply: "directives" selects it for flowcharts that declare directives', as
   assert.deepEqual(await selected({ apply: 'directives' }, [PLAIN, DECLARED, SEQUENCE, OWN_LAYOUT]), [false, true, false, false]);
 });
 
-test('the selection is appended, so the directives keep their line numbers', async () => {
+test('the selection is appended to the last line, so every line keeps its number', async () => {
   const mermaid = fakeMermaid();
   install(mermaid, { apply: 'directives' });
-  await mermaid.render('d', DECLARED);
-  assert.equal(mermaid.rendered[0], `${DECLARED}\n${SELECT}\n`);
+  await mermaid.render('d', `${DECLARED}\n\n`);
+  assert.equal(mermaid.rendered[0], `${DECLARED}${SELECT}\n`);
+});
+
+test('a misspelt directive selects the diagram, so its report can say what is wrong', async () => {
+  assert.deepEqual(await selected({ apply: 'directives' }, ['flowchart TD\n  A --> B\n  %% @mian A B']), [true]);
 });
 
 test('an unknown apply value is an error', () => {

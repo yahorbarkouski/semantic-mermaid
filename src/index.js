@@ -23,10 +23,13 @@ export { resolveFacts, describeFacts } from './facts/resolve.js';
 export { layoutSemantically, candidates } from './engine/layout.js';
 export { PALETTE, DARK_PALETTE } from './style/appearance.js';
 
-/** How many diagram sources and reports to remember. */
+/** How many reports to remember: those of the most recently rendered diagram ids. */
 const KEEP = 200;
 
-/** Selects the semantic layout for one diagram; Mermaid reads it wherever it stands in the text. */
+/**
+ * Selects the semantic layout for one diagram. Mermaid reads it wherever it stands in the text and
+ * removes it before parsing, so appended to the last line it leaves every line number as it was.
+ */
 const SELECT = '%%{init: {"layout": "semantic"}}%%';
 const FLOWCHARTS = new Set(['flowchart', 'flowchart-v2']);
 const APPLY = new Set(['flowcharts', 'directives']);
@@ -57,18 +60,28 @@ export function install(mermaid, options = {}) {
     } catch {
       return false; // not a diagram Mermaid knows; its own render reports the error
     }
-    return FLOWCHARTS.has(type) && (options.apply === 'flowcharts' || parseDirectives(text).count > 0);
+    if (!FLOWCHARTS.has(type)) return false;
+    if (options.apply === 'flowcharts') return true;
+    // a misspelt directive selects the diagram too, so its report says what is wrong
+    const { count, diagnostics } = parseDirectives(text);
+    return count > 0 || diagnostics.length > 0;
   };
   /** @type {import('./mermaid/loader.js').LoaderState} */
   const state = { sources: new Map(), reports: new Map(), settings: { colors: options.colors !== false } };
   mermaid.registerLayoutLoaders([createSemanticLayout(state)]);
 
   const render = mermaid.render.bind(mermaid);
-  mermaid.render = (/** @type {string} */ id, /** @type {string} */ text, /** @type {Element | undefined} */ container) => {
+  mermaid.render = async (/** @type {string} */ id, /** @type {string} */ text, /** @type {Element | undefined} */ container) => {
+    // the text is needed only while Mermaid renders it; a report from an earlier render of this id
+    // would describe another diagram
+    state.reports.delete(id);
     state.sources.set(id, text);
-    forgetOldest(state.sources);
-    forgetOldest(state.reports);
-    return render(id, selects(text) ? `${text}\n${SELECT}\n` : text, container);
+    try {
+      return await render(id, selects(text) ? `${text.trimEnd()}${SELECT}\n` : text, container);
+    } finally {
+      state.sources.delete(id);
+      forgetOldest(state.reports);
+    }
   };
 
   return {
@@ -77,7 +90,7 @@ export function install(mermaid, options = {}) {
       if (settings.colors !== undefined) state.settings.colors = settings.colors;
       if ('candidate' in settings) state.settings.candidate = settings.candidate;
     },
-    /** Report of the last render of a diagram id, or undefined. */
+    /** Report of the last render of a diagram id, or undefined when the semantic layout did not draw it. */
     report: (/** @type {string} */ id) => state.reports.get(id),
   };
 }
