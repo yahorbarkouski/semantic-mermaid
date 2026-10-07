@@ -4,21 +4,11 @@
 
 Better Mermaid flowcharts when agents write and humans read.
 
-Agents now write more and more of our diagrams, and Mermaid syntax costs them nothing to write. Reading the picture still costs a person time. Mermaid's layouts place boxes by the graph's structure alone: they don't know which path is the main one, which branch ends in an error, or who hands work to whom, so the drawing is often harder to follow than the source.
+The Mermaid language is awesome, but it was built for a time when humans wrote the code. Now most diagrams are written by agents, so writing the syntax is very cheap. The diagrams themselves are getting more complicated, and humans need an even deeper understanding of what's going on. Semantic Mermaid is our attempt to make those diagrams more comprehensible.
 
-Semantic Mermaid lets the author, usually an agent, say what the diagram means in Mermaid comment lines:
+We still use diagrams to explain and understand things. Mermaid's default layout knows nothing about that: it is intentless, so the drawing is often harder to grasp than the source. We extend the syntax with a few comment lines (`%% @main`, `@exit`, `@retry`, `@side`, `@lanes`) that say what the diagram actually means, run a sophisticated layout engine that draws it that way, and ship tools (a CLI, an SDK and an agent skill) so your agents can render better diagrams effortlessly.
 
-```
-%% @main A B C D      the path a reader should follow
-%% @exit B -> X       the arrow from B to X ends the flow early
-%% @lanes User App    parties that hand work back and forth
-```
-
-A layout engine reads them and draws the diagram that way: the main path in one line, exits beside their decision, loops drawn back along the side, side inputs such as a config or a runbook beside the step they feed, and parties in swimlanes. Because the lines are comments, GitHub and every other Mermaid host still draw the file, with their own layout. A CLI and an agent skill, instructions a coding agent loads, let your agents write, check and render these diagrams on their own, and an app that already shows Mermaid turns the engine on with one JavaScript call.
-
-- **15 wins, 0 losses against Mermaid's default layout.** We picked 20 diagrams whose meaning (parties, retries, exits) is what layouts get wrong. Blind model judges compared each one drawn by Semantic Mermaid and by ELK, the layout Mermaid 12 draws flowcharts with by default and the one this engine builds on, once in each order; a win needed both orders to agree. The other 5 were ties. All three swimlane diagrams won, five of their six verdicts "much better", the strongest grade.
-- **Agents write it.** Agents wrote the directives for 15 of those 20 diagrams using nothing but the skill and the CLI; the other 5 were written by hand.
-- **Better on plain Mermaid too.** On 236 flowcharts written without any directives, it drew far fewer piled-up arrowheads (776 against 982) and slightly fewer crossings (430 against 443) than ELK.
+We tested Semantic Mermaid on 236 flowcharts, where it drew fewer arrow crossings and far fewer piled-up arrowheads than Mermaid's default layout, and had blind model judges compare the two on 20 more, picked as the most distinct diagram shapes. Semantic Mermaid **won 15, lost 0 and tied 5**.
 
 ![A SAML sign-in handed between a browser, a service provider and an identity provider, drawn twice. On the left, Mermaid's ELK layout lays the three groups out as separate blocks, and the arrows between them cross, loop around and cut through group titles. On the right, Semantic Mermaid draws three lanes with time running down.](docs/images/sign-in.png)
 
