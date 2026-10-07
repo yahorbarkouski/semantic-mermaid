@@ -4,15 +4,27 @@
 
 Better Mermaid flowcharts when agents write and humans read.
 
-Mermaid language is awesome, but it was built for a time when humans wrote the code. Now most diagrams get written by agents, so writing the syntax is very cheap. The diagrams themselves are getting more complicated, and humans need even deeper understanding of what's going on. Semantic Mermaid is our attempt to make those diagrams more comprehensible.
+Agents now write more and more of our diagrams, and Mermaid syntax costs them nothing to write. Reading the picture still costs a person time. Mermaid's layouts place boxes by the graph's structure alone: they don't know which path is the main one, which branch ends in an error, or who hands work to whom, so the drawing is often harder to follow than the source.
 
-We still use diagrams to explain and understand things. Mermaid's default layout doesn't know anything about that, it's intentless, so the drawing is often harder to grasp than the source. We extend the syntax with a few lines in comments (%% @main, @exit, @retry, @side, @lanes) that say what the diagram means, run a sophisticated layout engine that draws it that way, and ship tools (CLI/SDK + agent skill) so your agents can render better diagrams effortlessly.
+Semantic Mermaid lets the author, usually an agent, say what the diagram means in Mermaid comment lines:
 
-We tried it on 20 diagrams where layout really matters. Blind model judges compared our layout to Mermaid's ELK. Semantic Mermaid won 15, lost 0, tied 5.
+```
+%% @main A B C D      the path a reader should follow
+%% @exit B -> X       the arrow from B to X ends the flow early
+%% @lanes User App    parties that hand work back and forth
+```
+
+A layout engine reads them and draws the diagram that way: the main path in one line, exits beside their decision, loops drawn back along the side, side inputs such as a config or a runbook beside the step they feed, and parties in swimlanes. Because the lines are comments, GitHub and every other Mermaid host still draw the file, with their own layout. A CLI and an agent skill, instructions a coding agent loads, let your agents write, check and render these diagrams on their own, and an app that already shows Mermaid turns the engine on with one JavaScript call.
+
+- **15 wins, 0 losses against ELK.** We picked 20 diagrams whose meaning (parties, retries, exits) is what layouts get wrong. Blind model judges compared each one drawn by Semantic Mermaid and by ELK, the layered layout Mermaid offers besides its default and the one this engine builds on, once in each order; a win needed both orders to agree. The other 5 were ties. All three swimlane diagrams won, five of their six verdicts "much better", the strongest grade.
+- **Agents write it.** Agents wrote the directives for 15 of those 20 diagrams using nothing but the skill and the CLI; the other 5 were written by hand.
+- **Better on plain Mermaid too.** On 236 flowcharts written without any directives, it drew far fewer piled-up arrowheads (776 against 982) and slightly fewer crossings (430 against 443) than ELK.
 
 ![A SAML sign-in handed between a browser, a service provider and an identity provider, drawn twice. On the left, Mermaid's ELK layout lays the three groups out as separate blocks, and the arrows between them cross, loop around and cut through group titles. On the right, Semantic Mermaid draws three lanes with time running down.](docs/images/sign-in.png)
 
 *The same source ([examples/sign-in.mmd](examples/sign-in.mmd)) drawn by Mermaid's ELK layout (left) and by Semantic Mermaid (right). ELK, the Eclipse Layout Kernel, is the layered layout Mermaid offers as an alternative to its default. One line,* `%% @lanes UA SP IdP`*, names the three subgraphs by their ids (Browser, Service provider and Identity provider) and turns them into swimlanes: every step sits in its party's lane, time runs down, and hand-offs cross between lanes in the gaps between steps. The orange line is the declared retry from the last step back to the first, drawn down the left side of the Browser lane.*
+
+**Contents:** [What you write](#what-you-write) · [Directives](#directives) · [Sized for the page](#sized-for-the-page) · [Install](#install) · [More examples](#more-examples) · [Use it](#use-it) · [How it works](#how-it-works) · [How well it works](#how-well-it-works) · [Limits](#limits) · [Development](#development)
 
 ## What you write
 
@@ -218,7 +230,7 @@ await renderer.close();
 ## How well it works
 
 - **Diagrams where meaning matters.** 20 flowcharts with parties, retries, exits and reference material were drawn twice from the same annotated source, once by Mermaid's ELK layout and once by Semantic Mermaid. Two Claude agents annotated 15 of them using only the skill and the CLI; the engine's author annotated the other 5. Blind panels of Claude Sonnet compared each pair with colours off, once in each order, and a win needed both panels to agree. Semantic Mermaid won 15, lost none and tied 5 (a tie is a pair both panels called even, or one they disagreed on). All three diagrams drawn as swimlanes won, and five of their six verdicts were the strongest grade, "much better".
-- **Ordinary diagrams.** On 236 flowcharts, real ones from public repositories plus synthetic test diagrams, every diagram, written in plain Mermaid without directives, renders without errors. Against ELK, arrow crossings fall from 443 to 430, and crowded arrow ends (combs, stacked arrowheads) from 982 to 776.
+- **Ordinary diagrams.** On 236 flowcharts, real ones from public repositories plus synthetic test diagrams, written in plain Mermaid without directives, every diagram that Mermaid itself can parse renders without errors; the other two put a comment line above their frontmatter, which Mermaid rejects. Against ELK, arrow crossings fall from 443 to 430, and crowded arrow ends (combs, stacked arrowheads) from 982 to 776.
 - **Speed.** A check parses only and takes about 0.15 s from the command line. In the browser, the median render of the 236 flowcharts takes 60 ms, against 34 ms for plain ELK, because the engine lays each diagram out several times.
 
 The judges are language models, one panel for each order, and the 20 diagrams were chosen to show the patterns the engine acts on, so read the first result as a showcase. Two of the 20 drawings have changed since they were judged, both with a straighter main path. On ordinary diagrams the goal is to stay at least even with ELK. Mermaid's default layout, dagre, was not part of these comparisons.
