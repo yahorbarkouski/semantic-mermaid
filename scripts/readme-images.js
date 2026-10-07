@@ -1,14 +1,15 @@
 // Render the documentation's pictures: every diagram in examples/ drawn by the semantic layout, as
 // examples/<name>.png beside its source, and the README's comparisons, the same diagram drawn by
 // Mermaid's ELK layout and by the semantic layout side by side (one above the other for wide
-// drawings), as docs/images/<name>.png.
+// drawings), as docs/images/<name>.png, and docs/images/page-fit.png, a wide diagram on a page as
+// written and as render draws it for the page.
 //
 //   npm run images
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { createRenderer } from '../toolchain/render.js';
+import { createRenderer, PAGE_WIDTH } from '../toolchain/render.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const EXAMPLES = path.join(ROOT, 'examples');
@@ -50,6 +51,17 @@ try {
     await page.locator('.figure').screenshot({ path: path.join(OUT, `${name}.png`) });
     console.log(`docs/images/${name}.png`);
   }
+
+  // the page figure: one wide diagram on two pages as wide as render assumes, as written and as render draws it
+  const wide = fs.readFileSync(path.join(ROOT, 'samples/food-delivery.mmd'), 'utf8');
+  const written = await renderer.render(wide, { fit: false });
+  const fitted = await renderer.render(wide);
+  const shown = Math.round((PAGE_WIDTH / written.width) * 100);
+  const onPage = (label, svg) => `<section><div class="k">${label}</div><div class="page">${svg}</div></section>`;
+  const PAGE_STYLE = `.page { width: ${PAGE_WIDTH}px; box-sizing: content-box; padding: 20px; border: 1px solid #D0D7DE; border-radius: 6px } .page svg { width: 100%; height: auto }`;
+  await page.setContent(`<style>${STYLE}${PAGE_STYLE}</style><div class="figure across">${onPage(`As written: ${Math.round(written.width)} px wide, shown at ${shown}%`, written.svg)}${onPage('As render draws it for the page', fitted.svg)}</div>`);
+  await page.locator('.figure').screenshot({ path: path.join(OUT, 'page-fit.png') });
+  console.log(`docs/images/page-fit.png  (${fitted.report?.layout?.chosen})`);
 } finally {
   await browser.close();
   await renderer.close();
