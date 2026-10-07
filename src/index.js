@@ -44,10 +44,12 @@ function forgetOldest(map) {
 
 /**
  * @param {any} mermaid a Mermaid 12 instance
- * @param {{ colors?: boolean, apply?: 'flowcharts' | 'directives' }} [options]
+ * @param {{ colors?: boolean, apply?: 'flowcharts' | 'directives', pageWidth?: number }} [options]
  *   `apply` picks the diagrams that get the semantic layout without a `layout` setting:
  *   'flowcharts' every flowchart, 'directives' the flowcharts that declare at least one directive.
- *   A diagram that sets a layout in its own configuration keeps that layout.
+ *   A diagram that sets a layout in its own configuration keeps that layout. `pageWidth`, the width
+ *   of the column the diagrams are shown in, lets the engine turn a drawing the column would shrink
+ *   below 40% of its size.
  */
 export function install(mermaid, options = {}) {
   if (options.apply !== undefined && !APPLY.has(options.apply)) throw new Error(`install: apply must be "flowcharts" or "directives", got ${JSON.stringify(options.apply)}`);
@@ -67,7 +69,7 @@ export function install(mermaid, options = {}) {
     return count > 0 || diagnostics.length > 0;
   };
   /** @type {import('./mermaid/loader.js').LoaderState} */
-  const state = { sources: new Map(), reports: new Map(), settings: { colors: options.colors !== false } };
+  const state = { sources: new Map(), reports: new Map(), settings: { colors: options.colors !== false, pageWidth: options.pageWidth } };
   mermaid.registerLayoutLoaders([createSemanticLayout(state)]);
 
   const render = mermaid.render.bind(mermaid);
@@ -85,10 +87,11 @@ export function install(mermaid, options = {}) {
   };
 
   return {
-    /** @param {{ colors?: boolean, candidate?: string }} settings  `candidate` forces one layout candidate, for inspection */
+    /** @param {{ colors?: boolean, candidate?: string, pageWidth?: number }} settings  `candidate` forces one layout candidate, for inspection */
     configure(settings) {
       if (settings.colors !== undefined) state.settings.colors = settings.colors;
       if ('candidate' in settings) state.settings.candidate = settings.candidate;
+      if ('pageWidth' in settings) state.settings.pageWidth = settings.pageWidth;
     },
     /** Report of the last render of a diagram id, or undefined when the semantic layout did not draw it. */
     report: (/** @type {string} */ id) => state.reports.get(id),

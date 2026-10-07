@@ -58,6 +58,10 @@ test('plain ELK is always a candidate; strips and bottom-up drawings get a turne
   assert.ok(candidates(facts, { direction: 'DOWN', aspect: 13 }).some((c) => c.features.direction === 'RIGHT'));
   assert.ok(!candidates(facts, { direction: 'RIGHT', aspect: 6 }).some((c) => c.features.direction));
   assert.ok(candidates(facts, { direction: 'UP', aspect: 1 }).some((c) => c.features.direction === 'DOWN'));
+  // a drawing its page would shrink below 40% is tried turned, and only when a page width is known
+  assert.ok(candidates(facts, { direction: 'RIGHT', aspect: 5, width: 2500, pageWidth: 800 }).some((c) => c.features.direction === 'DOWN'));
+  assert.ok(!candidates(facts, { direction: 'RIGHT', aspect: 5, width: 2500 }).some((c) => c.features.direction));
+  assert.ok(!candidates(facts, { direction: 'RIGHT', aspect: 5, width: 1500, pageWidth: 800 }).some((c) => c.features.direction));
 });
 
 test('the score counts crossings and arrows through boxes, and moves a crossed title aside', () => {

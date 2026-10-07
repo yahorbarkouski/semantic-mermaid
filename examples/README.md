@@ -1,6 +1,6 @@
 # Examples
 
-Each example is a Mermaid source file with Semantic Mermaid directives, next to a PNG of how the semantic layout draws it. GitHub and other Mermaid hosts draw these sources with their own layout, which ignores the directives, so the PNGs show what the engine does. Regenerate them with `npm run images`.
+Each example is a Mermaid source file with Semantic Mermaid directives, next to a PNG of how the semantic layout draws it for a page 800 px wide, `render`'s default. GitHub and other Mermaid hosts draw these sources with their own layout, which ignores the directives, so the PNGs show what the engine does. Regenerate them with `npm run images`.
 
 ## [order.mmd](order.mmd): main path, exit, retry, side box
 
@@ -26,11 +26,11 @@ Each example is a Mermaid source file with Semantic Mermaid directives, next to 
 
 ![An incident process with two reference groups beside the main path](incident.png)
 
-## [gateway.mmd](gateway.mmd): exits off a straight row
+## [gateway.mmd](gateway.mmd): exits beside a straight path
 
-Four `@exit` arrows. The request path is one row, and the rejections drop below it.
+Four `@exit` arrows. Written left to right, the request path is one row 2507 px wide with the rejections below it, which an 800 px page would show at 32% of its size, so `render` draws it top-down: the request path is one column, and each rejection sits beside its check. `render --no-fit` keeps the row.
 
-![An API gateway with four rejections below the request path](gateway.png)
+![An API gateway drawn top-down, with four rejections beside the request path](gateway.png)
 
 ## [pipeline.mmd](pipeline.mmd): a side input
 

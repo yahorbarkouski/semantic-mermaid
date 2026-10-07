@@ -23,7 +23,7 @@ import { applyAppearance } from '../style/appearance.js';
  * @typedef {object} LoaderState
  * @property {Map<string, string>} sources   diagram id -> source text, filled by the render wrapper
  * @property {Map<string, Report>} reports   diagram id -> report of its last render
- * @property {{ colors: boolean, candidate?: string }} settings  `candidate` forces one layout candidate, for inspection
+ * @property {{ colors: boolean, candidate?: string, pageWidth?: number }} settings  `candidate` forces one layout candidate, for inspection; `pageWidth` is the width of the page the drawings are for
  */
 
 const HOOK = '__semanticMermaidLayout';
@@ -64,7 +64,7 @@ export function createSemanticLayout(state) {
     /** @type {Choice | null} */
     let choice = null;
     /** @type {any} */ (globalThis)[HOOK] = async (/** @type {any} */ elkGraph, /** @type {any} */ elkInstance) => {
-      const laid = await layoutSemantically(elkGraph, elkInstance, { graph, facts, force: state.settings.candidate });
+      const laid = await layoutSemantically(elkGraph, elkInstance, { graph, facts, force: state.settings.candidate, pageWidth: state.settings.pageWidth });
       choice = laid.choice;
       return laid.result;
     };

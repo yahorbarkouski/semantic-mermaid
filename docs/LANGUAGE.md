@@ -68,7 +68,7 @@ For every diagram, the engine builds a few ELK layouts from the same Mermaid gra
 - ELK with the facts applied (straight main path, decision ports, side boxes beside their step, returns for retries, peers in order);
 - the same with fan-outs drawn as shared trunks, and the same with network-simplex node placement, which keeps a declared main path straight where ELK's default placement bends it (skipped for graphs whose arrows skip more than 500 layers in all, where it would take seconds);
 - variants without decision ports, without returns, without forced peer order or with side groups left in place, when the diagram has them;
-- the other direction when the drawing is a strip longer than 8:1;
+- the other direction when the drawing is a strip longer than 8:1, or when the page it is drawn for would show it at under 40% of its size (`render` assumes a page 800 px wide; an app passes `pageWidth` to `install`);
 - top-down or left-to-right versions when the author wrote `BT` or `RL`;
 - with `@lanes`, a swimlane layout computed without ELK: every box gets a time row from the flow and its lane's column, the main path runs straight down each lane, arrows between lanes turn in the gaps between rows on tracks of their own, and returns run beside a lane where they cross nothing, or outside the lanes.
 

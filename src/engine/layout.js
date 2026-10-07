@@ -36,6 +36,14 @@ const NONE = { spine: false, loops: false, sideBoxes: false, sideGroups: false, 
 const STRIP = 8;
 
 /**
+ * A page shows a drawing wider than itself shrunk to the page's width. Below this share of its size the
+ * labels are too small to read, so with a page width given, such a drawing is also tried turned, and
+ * a layout that would be shown that small pays PAGE_COST.
+ */
+const SMALLEST_ON_PAGE = 0.4;
+const PAGE_COST = 2;
+
+/**
  * Network-simplex placement slows down steeply with arrows that skip layers (ELK routes them through a
  * hidden box per layer): about 0.1 s at 360 skipped layers, the most in 236 real and synthetic
  * flowcharts, but 1.4 s at 613 and 10 s at 1706 in dense random graphs. Above this it is not tried.
@@ -51,7 +59,7 @@ const READING = { UP: 'DOWN', LEFT: 'RIGHT' };
  * placement, without decision ports, forced peer order, loop reversal or side groups when those
  * exist, and the other direction for a strip or a bottom-up drawing.
  * @param {Facts} facts
- * @param {{ direction: string, aspect: number, skipped?: number }} base  plain ELK's direction and shape, and how many layers its arrows skip
+ * @param {{ direction: string, aspect: number, skipped?: number, width?: number, pageWidth?: number }} base  plain ELK's direction, shape, width and how many layers its arrows skip, and the width of the page the drawing is for
  * @returns {Candidate[]}
  */
 export function candidates(facts, base) {
@@ -77,17 +85,22 @@ export function candidates(facts, base) {
   if (facts.sideGroups.size) list.push({ name: 'semantic-groups-in-place', features: { ...semantic, sideGroups: false } });
 
   const directions = [];
-  if (READING[base.direction]) directions.push(READING[base.direction]);
   // only an extreme strip is turned: judges preferred compact left-to-right drawings up to about
-  // 7:1 over the tall columns that turning them produced, and preferred a turned 13:1 tree
-  else if (base.direction === 'RIGHT' && base.aspect > STRIP) directions.push('DOWN');
-  else if (base.direction === 'DOWN' && base.aspect > STRIP) directions.push('RIGHT');
+  // 7:1 over the tall columns that turning them produced, and preferred a turned 13:1 tree; and a
+  // drawing its page would shrink below SMALLEST_ON_PAGE
+  const turn = base.aspect > STRIP || tooWide(base.width ?? 0, base.pageWidth);
+  if (READING[base.direction]) directions.push(READING[base.direction]);
+  else if (base.direction === 'RIGHT' && turn) directions.push('DOWN');
+  else if (base.direction === 'DOWN' && turn) directions.push('RIGHT');
   for (const direction of directions) {
     for (const c of list.filter((x) => !x.lanes).slice(0, 3)) list.push({ name: `${c.name}@${direction.toLowerCase()}`, features: { ...c.features, direction } });
     for (const c of lanes) list.push({ name: `${c.name}@${direction.toLowerCase()}`, features: { ...NONE, direction }, lanes: c.lanes });
   }
   return list;
 }
+
+/** Whether a page that wide would show a drawing this wide at under SMALLEST_ON_PAGE of its size. @param {number} width @param {number} [pageWidth] */
+const tooWide = (width, pageWidth) => Boolean(pageWidth && width * SMALLEST_ON_PAGE > pageWidth);
 
 /** Drawing against the reading direction costs a little, so a top-down version wins ties. */
 const UPSTREAM_COST = { UP: 1, LEFT: 1 };
@@ -110,10 +123,10 @@ function ignoredCost(candidate, facts) {
  * Lay out Mermaid's ELK graph semantically.
  * @param {any} elkGraph the graph Mermaid built
  * @param {{ layout: (g: any) => Promise<any> }} elk  Mermaid's ELK instance
- * @param {{ graph: Graph, facts: Facts, force?: string }} context  `force` names a candidate to use regardless of score (for inspection)
+ * @param {{ graph: Graph, facts: Facts, force?: string, pageWidth?: number }} context  `force` names a candidate to use regardless of score (for inspection); `pageWidth` is the width of the page the drawing is for, when known
  * @returns {Promise<{ result: any, choice: Choice }>} the laid-out graph for Mermaid, and why
  */
-export async function layoutSemantically(elkGraph, elk, { graph, facts, force }) {
+export async function layoutSemantically(elkGraph, elk, { graph, facts, force, pageWidth }) {
   // candidates run on data-only copies of Mermaid's graph, which carries functions
   const inner = await layoutSideGroups(elkGraph, elk, facts);
   const corners = new Set([...graph.nodes.values()].filter((n) => DECISION_SHAPES.has(n.shape)).map((n) => n.id));
@@ -137,7 +150,8 @@ export async function layoutSemantically(elkGraph, elk, { graph, facts, force })
   const scored = (/** @type {any} */ result, /** @type {Candidate} */ candidate) => {
     const measurements = measure(readGeometry(result), facts);
     const direction = result.layoutOptions?.['elk.direction'] ?? 'DOWN';
-    return { measurements, score: score(measurements) + (UPSTREAM_COST[direction] ?? 0) + ignoredCost(candidate, facts) };
+    const page = tooWide(result.width ?? 0, pageWidth) ? PAGE_COST : 0;
+    return { measurements, score: score(measurements) + (UPSTREAM_COST[direction] ?? 0) + ignoredCost(candidate, facts) + page };
   };
   const run = async (/** @type {Candidate} */ candidate) => {
     const laid = await lay(JSON.parse(JSON.stringify(elkGraph)), candidate);
@@ -152,7 +166,8 @@ export async function layoutSemantically(elkGraph, elk, { graph, facts, force })
   };
 
   const base = await run({ name: 'elk', features: NONE });
-  const plan = candidates(facts, { direction: elkGraph.layoutOptions?.['elk.direction'] ?? 'DOWN', aspect: base.measurements.aspect, skipped: skippedLayers(base.result) });
+  const direction = elkGraph.layoutOptions?.['elk.direction'] ?? 'DOWN';
+  const plan = candidates(facts, { direction, aspect: base.measurements.aspect, skipped: skippedLayers(base.result), width: base.result.width, pageWidth });
   const runs = [base];
   /** @type {{ name: string, error: string }[]} */
   const failed = [];
@@ -166,8 +181,23 @@ export async function layoutSemantically(elkGraph, elk, { graph, facts, force })
     }
   }
   // stable sort: on equal scores the earlier candidate, plain ELK first, wins
-  const ranked = runs.map((r, i) => ({ r, i })).sort((a, b) => a.r.score - b.r.score || a.i - b.i).map((x) => x.r);
+  const rank = () => runs.map((r, i) => ({ r, i })).sort((a, b) => a.r.score - b.r.score || a.i - b.i).map((x) => x.r);
+  // a winner its page would shrink below SMALLEST_ON_PAGE is also tried turned, whatever plain ELK's width
+  const first = rank()[0];
+  const across = direction === 'RIGHT' ? 'DOWN' : direction === 'DOWN' ? 'RIGHT' : null;
+  if (across && !first.candidate.features.direction && tooWide(first.result.width ?? 0, pageWidth) && !runs.some((r) => r.candidate.features.direction === across && r.candidate.lanes === first.candidate.lanes && r.candidate.name.startsWith(first.candidate.name))) {
+    const c = first.candidate;
+    const turned = { name: `${c.name}@${across.toLowerCase()}`, features: c.lanes ? { ...NONE, direction: across } : { ...c.features, direction: across }, lanes: c.lanes };
+    try {
+      runs.push(await run(turned));
+    } catch (error) {
+      failed.push({ name: turned.name, error: String(/** @type {any} */ (error)?.message ?? error).slice(0, 160) });
+    }
+  }
+  const ranked = rank();
   const best = ranked.find((r) => r.candidate.name === force) ?? ranked[0];
+  // the best drawing in the direction the author wrote, for saying why the chosen one is turned
+  const asWritten = ranked.find((r) => !r.candidate.features.direction) ?? base;
   return {
     // the winner as laid out while scoring: Mermaid draws from the graph the layout returns
     result: best.result,
@@ -176,7 +206,12 @@ export async function layoutSemantically(elkGraph, elk, { graph, facts, force })
       tried: [...ranked.map((r) => ({ name: r.candidate.name, score: round(r.score) })), ...failed.map((f) => ({ name: f.name, score: NaN, error: f.error }))],
       measurements: best.measurements,
       baseline: base.measurements,
-      unapplied: unapplied(best.candidate, best.measurements, facts, runs.some((r) => r.candidate.lanes)),
+      unapplied: [
+        ...unapplied(best.candidate, best.measurements, facts, runs.some((r) => r.candidate.lanes)),
+        ...(best.candidate.features.direction && !READING[direction] && base.measurements.aspect <= STRIP && tooWide(asWritten.result.width ?? 0, pageWidth)
+          ? [`drawn ${best.candidate.features.direction === 'DOWN' ? 'top-down' : 'left to right'} to fit a page ${pageWidth} px wide, which would show the drawing as written at ${Math.round(((pageWidth ?? 0) / asWritten.result.width) * 100)}% of its size`]
+          : []),
+      ],
     },
   };
 }

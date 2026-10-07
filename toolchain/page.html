@@ -34,7 +34,7 @@
     // a fixed seed for the rough.js outlines Mermaid draws for some shapes, so the same source always
     // gives the same SVG (the layout itself has no randomness)
     mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default', handDrawnSeed: 1, ...(layout === 'elk' && flowchart ? { layout: 'elk' } : {}) });
-    semantic.configure({ colors: options.colors !== false, candidate: options.candidate });
+    semantic.configure({ colors: options.colors !== false, candidate: options.candidate, pageWidth: options.fit || undefined });
     const id = `diagram-${counter++}`;
     const started = performance.now();
     const { svg } = await (layout === 'elk' ? plainRender : mermaid.render)(id, source);

@@ -45,6 +45,15 @@ test('the SVG is well-formed XML, line breaks in labels included, so it shows as
   assert.match(svg, /<br [^>]*\/>|<br\/>/);
 });
 
+test('a drawing an 800 px page would shrink below 40% is turned to fit it, unless the page is left out', async () => {
+  const gateway = fs.readFileSync(new URL('../examples/gateway.mmd', import.meta.url), 'utf8');
+  const onPage = await renderer.render(gateway);
+  assert.match(onPage.report?.layout?.chosen ?? '', /@down$/);
+  assert.ok(onPage.report?.diagnostics.some((d) => /to fit a page 800 px wide/.test(d.message)));
+  const unframed = await renderer.render(gateway, { fit: false });
+  assert.doesNotMatch(unframed.report?.layout?.chosen ?? '', /@down$/);
+});
+
 test('the same source always renders to the same SVG', async () => {
   const first = await renderer.render(ORDER);
   const second = await renderer.render(ORDER);

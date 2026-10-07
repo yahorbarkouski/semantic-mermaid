@@ -35,14 +35,15 @@ Pass `install` the Mermaid instance your app renders with. The package also inst
 - It registers a Mermaid layout named `semantic`, through Mermaid's `registerLayoutLoaders`.
 - It wraps `mermaid.render`, so the engine can read each diagram's text. Mermaid removes `%%` comments before it lays a diagram out, and directives are comments.
 
-Call it once, before the first render. It takes two options:
+Call it once, before the first render. It takes three options:
 
 | Option | Values | Default | What it does |
 | --- | --- | --- | --- |
 | `apply` | `'directives'`, `'flowcharts'` | not set | Which diagrams get the semantic layout without a `layout` setting of their own; see [Choose which diagrams get the semantic layout](#choose-which-diagrams-get-the-semantic-layout) |
 | `colors` | `true`, `false` | `true` | Whether the engine colours flowcharts by role; see [Themes and colours](#themes-and-colours) |
+| `pageWidth` | a width in pixels | not set | The width of the column your diagrams are shown in. A drawing that column would shrink below 40% of its size, such as a long left-to-right row, is drawn turned when that fits better, and its report says so in an `info` note |
 
-It returns an object with two methods. `configure({ colors })` changes the colour setting for later renders. `report(id)` tells you what the engine did with one diagram; see [Read what the engine did](#read-what-the-engine-did).
+It returns an object with two methods. `configure({ colors, pageWidth })` changes those settings for later renders. `report(id)` tells you what the engine did with one diagram; see [Read what the engine did](#read-what-the-engine-did).
 
 ## Render with mermaid.render
 
