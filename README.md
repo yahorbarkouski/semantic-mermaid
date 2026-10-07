@@ -1,6 +1,6 @@
 # Semantic Mermaid
 
-[![skills.sh](https://skills.sh/b/yahorbarkouski/semantic-mermaid)](https://skills.sh/yahorbarkouski/semantic-mermaid)
+[![npm](https://img.shields.io/npm/v/semantic-mermaid)](https://www.npmjs.com/package/semantic-mermaid) [![skills.sh](https://skills.sh/b/yahorbarkouski/semantic-mermaid)](https://skills.sh/yahorbarkouski/semantic-mermaid)
 
 The Mermaid language is awesome, but it was built for a time when humans wrote the code. Now most diagrams are written by agents, and writing the syntax is very cheap. The diagrams themselves are getting more complicated, and humans need an even deeper understanding of what's going on. Semantic Mermaid is our attempt to make those diagrams more comprehensible.
 
