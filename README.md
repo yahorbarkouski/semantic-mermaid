@@ -132,7 +132,7 @@ semantic-mermaid render examples/order.mmd -o order.svg -o order.png
 semantic-mermaid source order.svg
 ```
 
-A file argument of `-` reads the diagram from standard input, so a diagram another program writes never needs a file; `render -` then takes the image to write from `-o`. `render` creates the image's folder, and writes nothing while the diagram has errors. Every SVG it writes carries the diagram's text, which `source` prints. `check` prints `ok`, or each problem with its line and what fixes it, and exits with status 1 when there is an error:
+A file argument of `-` reads the diagram from standard input, so a diagram another program writes never needs a file; `render -` then takes the image to write from `-o`. `render` creates the image's folder, and writes nothing while the diagram has errors. Every SVG it writes carries the diagram's text, which `source` prints. `check` prints `ok`, or each problem with its line and what fixes it, and exits with status 1 when there is an error. With `@exit B -> X` in `examples/order.mmd` changed to `@exit B -> Y`:
 
 ```
 order.mmd: 1 error
