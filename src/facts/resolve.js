@@ -2,6 +2,11 @@
 // the author did not declare is inferred from the graph's structure, so plain Mermaid works too.
 import { adjacency, boxes } from '../model/graph.js';
 
+/** Longest arrow label a box beside its step, or an exit beside its decision, may carry; a longer one would push the box far away. */
+export const SIDE_LABEL = 24;
+/** Most boxes beside one step, or the step disappears among them. */
+export const MOST_BESIDE = 2;
+
 /** @typedef {import('../model/graph.js').Graph} Graph */
 /** @typedef {import('../model/graph.js').GraphEdge} GraphEdge */
 /** @typedef {import('../language/directives.js').Annotations} Annotations */
@@ -78,6 +83,10 @@ export function resolveFacts(graph, annotations) {
         facts.declaredEdges.add(e.id);
         if (role === 'retry') facts.loops.add(e.id);
       }
+      // an exit box with no other arrows sits beside its decision, which leaves room for a short label only
+      const ends = (out.get(to)?.length ?? 0) + (into.get(to)?.length ?? 0) === 1;
+      const long = found.find((e) => e.label.length > SIDE_LABEL);
+      if (role === 'exit' && ends && long) diagnostics.push({ severity: 'warning', line, message: `@exit ${from} -> ${to}: the arrow's label has ${long.label.length} characters, and ${to} sits beside ${from} only when it has at most ${SIDE_LABEL}; shorten the label` });
     }
   }
 
@@ -103,6 +112,8 @@ export function resolveFacts(graph, annotations) {
   }
 
   // declared side boxes outside those groups
+  /** @type {Map<string, number>} */
+  const besideStep = new Map();
   for (const [id, line] of declaredSide) {
     const node = graph.nodes.get(id);
     if (!node || node.isGroup || (node.parent && facts.sideGroups.has(node.parent))) continue;
@@ -110,7 +121,14 @@ export function resolveFacts(graph, annotations) {
     const partner = links.length === 1 ? (links[0].from === id ? links[0].to : links[0].from) : null;
     if (links.length !== 1) diagnostics.push({ severity: 'warning', line, message: `@side ${id}: a side box serves one step, but ${id} has ${links.length} arrows; it is laid out as a normal box` });
     else if (node.parent && partner && graph.nodes.get(partner)?.parent !== node.parent) diagnostics.push({ severity: 'warning', line, message: `@side ${id}: ${id} is inside group "${node.parent}" and its step ${partner} is not; declare @side ${node.parent} to place the whole group beside ${partner}` });
-    else facts.sideBoxes.set(id, 'declared');
+    else {
+      facts.sideBoxes.set(id, 'declared');
+      const label = links[0].label;
+      if (label.length > SIDE_LABEL) diagnostics.push({ severity: 'warning', line, message: `@side ${id}: the label on its arrow has ${label.length} characters, and a box sits beside its step only when it has at most ${SIDE_LABEL}; shorten the label` });
+      const beside = (besideStep.get(/** @type {string} */ (partner)) ?? 0) + 1;
+      besideStep.set(/** @type {string} */ (partner), beside);
+      if (beside > MOST_BESIDE) diagnostics.push({ severity: 'warning', line, message: `@side ${id}: ${partner} already has ${MOST_BESIDE} boxes beside it, the most that fit, so ${id} is laid out as a normal box` });
+    }
   }
 
   // inferred side groups: a set of references, every box of which links only to one step outside

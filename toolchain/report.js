@@ -22,9 +22,9 @@ export function formatReport(report, { verbose = false } = {}) {
       lines.push(`  crossings ${m.crossings}, arrows through boxes ${m.throughBoxes}, label clashes ${m.labelClashes}, hugging arrows ${m.hugging}, crossed group titles ${m.titleCrossings}, aspect ${m.aspect.toFixed(2)}`);
     }
   }
-  for (const d of report.diagnostics) {
-    if (d.severity !== 'info') lines.push(`${d.severity}: ${d.line ? `line ${d.line}: ` : ''}${d.message}`);
-  }
+  // problems in the order of their lines, so they read top to bottom against the source
+  const problems = report.diagnostics.filter((d) => d.severity !== 'info').sort((a, b) => (a.line ?? 0) - (b.line ?? 0));
+  for (const d of problems) lines.push(`${d.severity}: ${d.line ? `line ${d.line}: ` : ''}${d.message}`);
   for (const d of report.diagnostics) if (d.severity === 'info') lines.push(`note: ${d.message}`);
   return lines.join('\n');
 }

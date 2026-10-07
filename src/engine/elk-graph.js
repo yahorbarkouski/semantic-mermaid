@@ -6,6 +6,7 @@
 // for layout (Mermaid swaps them back when drawing).
 
 import { mergeSideGroups, splitSideGroups } from './side-groups.js';
+import { MOST_BESIDE, SIDE_LABEL } from '../facts/resolve.js';
 
 /** @typedef {import('../model/graph.js').Graph} Graph */
 /** @typedef {import('../facts/resolve.js').Facts} Facts */
@@ -138,8 +139,6 @@ function straightenMainPath(root, facts) {
   }
 }
 
-/** Longest arrow label a box beside its step may carry; a longer one would push the box far away. */
-const SIDE_LABEL = 24;
 
 /**
  * Side boxes, and exits that end the flow right after a decision, become ELK comment boxes: ELK
@@ -168,9 +167,8 @@ function placeSideBoxes(root, index, graph, facts, merged) {
     if (!partnerNode || merged.has(partner) || partnerNode.children?.length || index.parentOf.get(partner) !== index.parentOf.get(id)) continue;
     const label = edgeLabel.get(e.id) ?? '';
     if (label.length > SIDE_LABEL) continue;
-    // at most two boxes beside one step, or the step disappears among them
     const n = (perPartner.get(partner) ?? 0) + 1;
-    if (n > 2) continue;
+    if (n > MOST_BESIDE) continue;
     perPartner.set(partner, n);
     node.layoutOptions = { ...(node.layoutOptions ?? {}), 'elk.commentBox': 'true' };
     const holder = index.parentOf.get(id);

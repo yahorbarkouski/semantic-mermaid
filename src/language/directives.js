@@ -57,7 +57,7 @@ export function parseDirectives(source) {
   /** @type {Diagnostic[]} */
   const diagnostics = [];
   let count = 0;
-  (source ?? '').split('\n').forEach((text, index) => {
+  (source ?? '').split(/\r?\n/).forEach((text, index) => {
     const match = text.match(LINE);
     if (!match) return;
     const line = index + 1;
@@ -65,7 +65,9 @@ export function parseDirectives(source) {
     const body = match[2].trim();
     const kind = DIRECTIVES[/** @type {keyof typeof DIRECTIVES} */ (name)];
     if (!kind) {
-      diagnostics.push({ severity: 'warning', line, message: `unknown directive @${name}; known: ${Object.keys(DIRECTIVES).map((d) => '@' + d).join(', ')}` });
+      // a misspelt directive would silently drop what it declares, so it is an error
+      const near = Object.keys(DIRECTIVES).find((d) => editDistance(d, name) <= 2);
+      diagnostics.push({ severity: 'error', line, message: `unknown directive @${name}; ${near ? `did you mean @${near}?` : `the directives are ${Object.keys(DIRECTIVES).map((d) => '@' + d).join(', ')}`}` });
       return;
     }
     count++;
@@ -116,7 +118,7 @@ export function parseDirectives(source) {
  * @returns {{ layout: string, line: number }[]}
  */
 export function layoutSettings(source) {
-  const lines = source.split('\n');
+  const lines = source.split(/\r?\n/);
   const front = lines[0]?.trim() === '---' ? lines.findIndex((l, i) => i > 0 && l.trim() === '---') : -1;
   /** @type {{ layout: string, line: number }[]} */
   const found = [];
@@ -126,6 +128,17 @@ export function layoutSettings(source) {
     if (match) found.push({ layout: match[1], line: i + 1 });
   }
   return found;
+}
+
+/** Levenshtein distance, for suggesting the directive a misspelt name meant. @param {string} a @param {string} b */
+function editDistance(a, b) {
+  let row = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const next = [i];
+    for (let j = 1; j <= b.length; j++) next[j] = Math.min(row[j] + 1, next[j - 1] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    row = next;
+  }
+  return row[b.length];
 }
 
 /** Node ids separated by spaces, commas or arrows: "A B C", "A, B, C" and "A -> B -> C" all work. */

@@ -68,3 +68,11 @@ test('describeFacts says what was declared and what was inferred', () => {
     'side boxes: R (inferred)',
   ]);
 });
+
+test('limits the layout applies are warnings: long labels beside a step, a third box beside one step', () => {
+  const data = layoutData(['A-->B', 'B--this label is far too long for the side-->X', 'B-->C', 'R1-.->C', 'R2-.->C', 'R3-.->C', 'C-->D'], { shapes: { B: 'diamond' } });
+  const { diagnostics } = facts(data, '%% @main A B C D\n%% @exit B -> X\n%% @side R1 R2 R3');
+  assert.deepEqual(diagnostics.map((d) => [d.severity, d.line]), [['warning', 2], ['warning', 3]]);
+  assert.match(diagnostics[0].message, /label has 39 characters, and X sits beside B only when it has at most 24/);
+  assert.match(diagnostics[1].message, /@side R3: C already has 2 boxes beside it/);
+});

@@ -49,8 +49,8 @@ test('reports unknown and malformed directives', () => {
     '%% @main B C',
   ].join('\n'));
   assert.equal(annotations.main?.line, 5);
-  assert.deepEqual(diagnostics.map((d) => [d.severity, d.line]), [['warning', 1], ['error', 2], ['error', 3], ['error', 4], ['error', 6]]);
-  assert.match(diagnostics[0].message, /unknown directive @mian/);
+  assert.deepEqual(diagnostics.map((d) => [d.severity, d.line]), [['error', 1], ['error', 2], ['error', 3], ['error', 4], ['error', 6]]);
+  assert.match(diagnostics[0].message, /unknown directive @mian; did you mean @main?/);
   assert.match(diagnostics[1].message, /"From -> To"/);
 });
 
@@ -59,4 +59,10 @@ test('no source means no annotations', () => {
   assert.equal(count, 0);
   assert.equal(annotations.main, null);
   assert.equal(annotations.colors, true);
+});
+
+test('Windows line endings read like Unix ones', () => {
+  const { annotations, count } = parseDirectives('flowchart TD\r\n  A --> B\r\n  %% @main A B\r\n  %% @exit B -> C\r\n');
+  assert.equal(count, 2);
+  assert.deepEqual(annotations.main?.ids, ['A', 'B']);
 });
