@@ -104,26 +104,28 @@ export function parseDirectives(source) {
     }
   });
   // a layout chosen in the diagram's own configuration replaces the semantic one
-  const chosen = count ? otherLayout(source ?? '') : null;
+  const chosen = count ? layoutSettings(source ?? '').find((s) => s.layout !== 'semantic') : undefined;
   if (chosen) diagnostics.push({ severity: 'warning', line: chosen.line, message: `the diagram's configuration sets layout: ${chosen.layout}, so the semantic layout does not run and the directives have no effect; remove that setting` });
   return { annotations, diagnostics, count };
 }
 
 /**
- * A layout other than "semantic" set in the diagram's frontmatter (`config: layout: elk`) or in an
- * init directive (`%%{init: {"layout": "elk"}}%%`), with its line.
+ * The layouts the diagram selects itself, in its frontmatter (`config: layout: elk`) or in an init
+ * directive (`%%{init: {"layout": "elk"}}%%`), each with its line.
  * @param {string} source
- * @returns {{ layout: string, line: number } | null}
+ * @returns {{ layout: string, line: number }[]}
  */
-function otherLayout(source) {
+export function layoutSettings(source) {
   const lines = source.split('\n');
   const front = lines[0]?.trim() === '---' ? lines.findIndex((l, i) => i > 0 && l.trim() === '---') : -1;
+  /** @type {{ layout: string, line: number }[]} */
+  const found = [];
   for (let i = 0; i < lines.length; i++) {
     const inFront = i > 0 && i < front;
     const match = inFront ? lines[i].match(/^\s*layout:\s*["']?([\w-]+)/) : lines[i].match(/^\s*%%\{.*["']?layout["']?\s*:\s*["']([\w-]+)/);
-    if (match && match[1] !== 'semantic') return { layout: match[1], line: i + 1 };
+    if (match) found.push({ layout: match[1], line: i + 1 });
   }
-  return null;
+  return found;
 }
 
 /** Node ids separated by spaces, commas or arrows: "A B C", "A, B, C" and "A -> B -> C" all work. */
