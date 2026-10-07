@@ -36,7 +36,7 @@
     "docs/LANGUAGE.md"
   ],
   "scripts": {
-    "test": "node --test \"test/*.test.js\"",
+    "test": "node --test test/*.test.js",
     "check-types": "tsc -p jsconfig.json",
     "images": "node scripts/readme-images.js",
     "vendor": "node scripts/vendor-layout-elk.js"
