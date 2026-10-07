@@ -1,6 +1,6 @@
 {
   "name": "semantic-mermaid",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Mermaid flowcharts laid out by what they mean: directives an agent writes in comments, a layout engine that reads them, and a CLI to check and render.",
   "keywords": [
     "mermaid",
