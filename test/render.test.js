@@ -39,6 +39,12 @@ test('plain Mermaid renders unchanged in meaning, and directives are invisible t
   assert.match(elk.svg, /<svg/);
 });
 
+test('the SVG is well-formed XML, line breaks in labels included, so it shows as an image', async () => {
+  const { svg } = await renderer.render('flowchart TD\n  A[first<br/>second] --> B');
+  assert.doesNotMatch(svg, /<br>/);
+  assert.match(svg, /<br [^>]*\/>|<br\/>/);
+});
+
 test('the same source always renders to the same SVG', async () => {
   const first = await renderer.render(ORDER);
   const second = await renderer.render(ORDER);

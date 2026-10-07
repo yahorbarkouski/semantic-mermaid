@@ -132,7 +132,9 @@ semantic-mermaid render examples/order.mmd -o order.svg -o order.png
 semantic-mermaid source order.svg
 ```
 
-A file argument of `-` reads the diagram from standard input, so a diagram another program writes never needs a file; `render -` then takes the image to write from `-o`. `render` creates the image's folder, and writes nothing while the diagram has errors. Every SVG it writes carries the diagram's text, which `source` prints. `check` prints `ok`, or each problem with its line and what fixes it, and exits with status 1 when there is an error. With `@exit B -> X` in `examples/order.mmd` changed to `@exit B -> Y`:
+A file argument of `-` reads the diagram from standard input, so a diagram another program writes never needs a file; `render -` then takes the image to write from `-o`. `render` creates the image's folder, and writes nothing while the diagram has errors. Every SVG it writes carries the diagram's text, which `source` prints.
+
+`render` sizes images for a page about 800 px wide, the width of a GitHub README or a chat column: a narrower diagram is centred in a frame that wide, the way GitHub centres its own Mermaid diagrams, at the same size. `--page-width` sets another width, and `--no-fit` keeps the diagram's own width. `check` prints `ok`, or each problem with its line and what fixes it, and exits with status 1 when there is an error. With `@exit B -> X` in `examples/order.mmd` changed to `@exit B -> Y`:
 
 ```
 order.mmd: 1 error

@@ -24,7 +24,7 @@
   /**
    * Render one diagram into the stage.
    * @param {string} source Mermaid or Semantic Mermaid text
-   * @param {{ layout?: 'semantic' | 'elk', colors?: boolean, candidate?: string }} options
+   * @param {{ layout?: 'semantic' | 'elk', colors?: boolean, candidate?: string, fit?: number | false }} options
    */
   window.renderDiagram = async (source, options = {}) => {
     const layout = options.layout ?? 'semantic';
@@ -42,10 +42,19 @@
     stage.innerHTML = svg;
     const element = stage.querySelector('svg');
     const box = element.viewBox.baseVal;
-    element.setAttribute('width', String(box.width));
-    element.setAttribute('height', String(box.height));
+    // a diagram narrower than the page gets a frame as wide as the page, with the diagram in the middle
+    if (options.fit && box.width < options.fit) {
+      const pad = (options.fit - box.width) / 2;
+      element.setAttribute('viewBox', `${box.x - pad} ${box.y} ${options.fit} ${box.height}`);
+    }
+    const frame = element.viewBox.baseVal;
+    element.setAttribute('width', String(frame.width));
+    element.setAttribute('height', String(frame.height));
     element.style.maxWidth = 'none';
-    return { svg: stage.innerHTML, report: layout === 'semantic' ? semantic.report(id) ?? null : null, width: box.width, height: box.height, ms };
+    // XML, which an SVG file must be: Mermaid's labels hold HTML such as <br>, which the HTML serializer
+    // leaves unclosed and image viewers (GitHub's included) then refuse to draw
+    const xml = new XMLSerializer().serializeToString(element);
+    return { svg: xml, report: layout === 'semantic' ? semantic.report(id) ?? null : null, width: frame.width, height: frame.height, ms };
   };
   window.semanticMermaidReady = true;
 </script>

@@ -22,7 +22,7 @@ await Promise.all(files.map(async (file) => {
   const row = { id };
   for (const layout of /** @type {const} */ (['semantic', 'elk'])) {
     try {
-      const r = await renderer.render(source, { layout, png: Boolean(values.png && values.out) });
+      const r = await renderer.render(source, { layout, png: Boolean(values.png && values.out), fit: false });
       row[`${layout}Ms`] = Math.round(r.ms);
       if (values.out) {
         fs.writeFileSync(path.join(values.out, `${id}.${layout}.svg`), r.svg);

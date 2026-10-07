@@ -9,11 +9,17 @@ import { openRenderer } from './browser.js';
 
 /**
  * @typedef {object} RenderOptions
- * @property {'semantic' | 'elk'} [layout]  'elk' draws Mermaid's default layout, for comparison
+ * @property {'semantic' | 'elk'} [layout]  'elk' draws Mermaid's ELK layout, for comparison
  * @property {boolean} [colors]             automatic colours (default on)
  * @property {boolean} [png]                also return a PNG screenshot
+ * @property {number | false} [fit]         width of the page the image will sit on: a narrower diagram
+ *                                          is centred in a frame that wide, as GitHub centres its own
+ *                                          Mermaid diagrams (default PAGE_WIDTH; false keeps the diagram's width)
  * @property {string} [candidate]           force one layout candidate (see the report's `tried` list)
  */
+
+/** A page an image is typically read on: a GitHub README column (about 830 px) or a chat column (about 770 px). */
+export const PAGE_WIDTH = 800;
 
 /**
  * @typedef {object} Rendered
@@ -46,7 +52,7 @@ export async function createRenderer({ pages = 1 } = {}) {
     async render(source, options = {}) {
       const page = await acquire();
       try {
-        const out = await page.evaluate(([s, o]) => /** @type {any} */ (window).renderDiagram(s, o), [source, { layout: options.layout ?? 'semantic', colors: options.colors !== false, candidate: options.candidate }])
+        const out = await page.evaluate(([s, o]) => /** @type {any} */ (window).renderDiagram(s, o), [source, { layout: options.layout ?? 'semantic', colors: options.colors !== false, candidate: options.candidate, fit: options.fit ?? PAGE_WIDTH }])
           .catch((/** @type {Error} */ error) => { throw new Error(cleanMermaidError(error.message)); });
         const png = options.png ? await page.locator('#stage').screenshot() : undefined;
         return { ...out, png };

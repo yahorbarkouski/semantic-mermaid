@@ -32,8 +32,8 @@ try {
   for (const file of files) {
     const name = file.replace(/\.mmd$/, '');
     const source = fs.readFileSync(path.join(dir, file), 'utf8');
-    const semantic = await renderer.render(source);
-    const elk = await renderer.render(source, { layout: 'elk' });
+    const semantic = await renderer.render(source, { fit: false });
+    const elk = await renderer.render(source, { layout: 'elk', fit: false });
     const wide = (elk.width / elk.height + semantic.width / semantic.height) / 2 > 1.3;
     await page.setContent(`<style>${STYLE}</style><div class="figure ${wide ? 'stacked' : 'across'}">${panel('Mermaid · ELK layout', elk.svg, 'elk')}${panel('Semantic Mermaid', semantic.svg, 'ours')}</div>`);
     const out = path.join(dir, `${name}${suffix}.png`);

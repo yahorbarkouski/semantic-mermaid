@@ -36,12 +36,14 @@ try {
   for (const file of fs.readdirSync(EXAMPLES).filter((f) => f.endsWith('.mmd')).sort()) {
     const name = file.replace(/\.mmd$/, '');
     const source = fs.readFileSync(path.join(EXAMPLES, file), 'utf8');
-    const semantic = await renderer.render(source);
-    await page.setContent(`<style>${STYLE}</style><div class="figure">${semantic.svg}</div>`);
+    // the example picture sits on a page, framed to the page's width; the comparison panels keep their own
+    const framed = await renderer.render(source);
+    await page.setContent(`<style>${STYLE}</style><div class="figure">${framed.svg}</div>`);
     await page.locator('.figure').screenshot({ path: path.join(EXAMPLES, `${name}.png`) });
-    console.log(`examples/${name}.png  (${semantic.report?.layout?.chosen})`);
+    console.log(`examples/${name}.png  (${framed.report?.layout?.chosen})`);
     if (!COMPARED.has(name)) continue;
-    const elk = await renderer.render(source, { layout: 'elk' });
+    const semantic = await renderer.render(source, { fit: false });
+    const elk = await renderer.render(source, { layout: 'elk', fit: false });
     // wide drawings read better stacked; tall ones side by side
     const wide = (elk.width / elk.height + semantic.width / semantic.height) / 2 > 1.3;
     await page.setContent(`<style>${STYLE}</style><div class="figure ${wide ? 'stacked' : 'across'}">${panel('Mermaid · ELK layout', elk.svg, 'elk')}${panel('Semantic Mermaid', semantic.svg, 'ours')}</div>`);

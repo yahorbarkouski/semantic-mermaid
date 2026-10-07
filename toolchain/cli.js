@@ -28,7 +28,7 @@ const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.met
 
 const USAGE = `usage:
   semantic-mermaid check <file.mmd|-> [--verbose] [--json]
-  semantic-mermaid render <file.mmd|-> [-o out.svg|out.png ...] [--elk] [--no-colors] [--verbose] [--json]
+  semantic-mermaid render <file.mmd|-> [-o out.svg|out.png ...] [--page-width 800 | --no-fit] [--elk] [--no-colors] [--verbose] [--json]
   semantic-mermaid setup    download the headless browser that render uses (once, about 95 MB)
   semantic-mermaid source <file.svg>   print the diagram an SVG from render was drawn from
   semantic-mermaid --version`;
@@ -79,6 +79,8 @@ async function main() {
         out: { type: 'string', short: 'o', multiple: true },
         elk: { type: 'boolean', default: false },
         'no-colors': { type: 'boolean', default: false },
+        'no-fit': { type: 'boolean', default: false },
+        'page-width': { type: 'string' },
         candidate: { type: 'string' },
         json: { type: 'boolean', default: false },
         verbose: { type: 'boolean', short: 'v', default: false },
@@ -149,6 +151,8 @@ async function main() {
   const outs = values.out?.length ? values.out : [file.replace(/\.(mmd|mermaid|md|txt)$/i, '') + '.svg'];
   const unknown = outs.find((o) => !/\.(svg|png)$/i.test(o));
   if (unknown) return fail(`-o ${unknown}: the file name must end in .svg or .png`, 2);
+  const pageWidth = values['page-width'] === undefined ? undefined : Number(values['page-width']);
+  if (pageWidth !== undefined && !(pageWidth > 0)) return fail(`--page-width ${values['page-width']}: give the page's width in pixels, such as 800`, 2);
   const { createRenderer } = await import('./render.js');
   let renderer;
   try {
@@ -159,7 +163,7 @@ async function main() {
   try {
     let rendered;
     try {
-      rendered = await renderer.render(source, { layout: values.elk ? 'elk' : 'semantic', colors: !values['no-colors'], png: outs.some((o) => /\.png$/i.test(o)), candidate: values.candidate });
+      rendered = await renderer.render(source, { layout: values.elk ? 'elk' : 'semantic', colors: !values['no-colors'], png: outs.some((o) => /\.png$/i.test(o)), candidate: values.candidate, fit: values['no-fit'] ? false : pageWidth });
     } catch (error) {
       return failed(error);
     }
