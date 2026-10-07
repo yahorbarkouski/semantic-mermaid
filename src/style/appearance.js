@@ -3,7 +3,8 @@
 // Blue marks where the flow starts, decides and ends, and (when declared) the main path; rose
 // marks declared exits, orange declared retries, slate side boxes. Ordinary steps stay neutral,
 // nothing is coloured from a guess about failure (a "No" is not an error), and anything the
-// author styled keeps the author's style. The palette is for Mermaid's light themes.
+// author styled keeps the author's style. The palette is drawn for a light background, so it applies
+// with Mermaid's light themes only, and not when the theme variables set darkMode.
 
 /** @typedef {import('../model/graph.js').Graph} Graph */
 /** @typedef {import('../facts/resolve.js').Facts} Facts */
@@ -22,7 +23,7 @@ export const PALETTE = {
   exitArrow: { stroke: '#B4473C', width: 1.5 },
 };
 
-const LIGHT_THEMES = new Set(['default', 'neutral', 'base', undefined]);
+const LIGHT_THEMES = new Set(['redux-color', 'redux', 'neo', 'default', 'neutral', 'base', undefined]);
 
 /** @param {{ fill: string, stroke: string, width?: number, dash?: string }} s */
 const nodeStyle = (s) => [`fill:${s.fill}`, `stroke:${s.stroke}`, `stroke-width:${s.width ?? 1}px`, ...(s.dash ? [`stroke-dasharray:${s.dash}`] : [])];
@@ -37,8 +38,8 @@ const arrowStyle = (s) => [`stroke:${s.stroke}`, `stroke-width:${s.width}px`, 'f
  * @returns {boolean} whether colours were applied
  */
 export function applyAppearance(data4Layout, graph, facts) {
-  const theme = data4Layout.config?.theme;
-  if (!facts.colors || !LIGHT_THEMES.has(theme)) return false;
+  const config = data4Layout.config ?? {};
+  if (!facts.colors || !LIGHT_THEMES.has(config.theme) || config.themeVariables?.darkMode) return false;
   for (const n of data4Layout.nodes ?? []) {
     const node = graph.nodes.get(n.id);
     if (!node || node.styled) continue;
