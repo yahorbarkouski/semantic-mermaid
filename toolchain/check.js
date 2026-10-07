@@ -24,8 +24,11 @@ function mermaidParser() {
   loading ??= (async () => {
     const fromMermaid = createRequire(fileURLToPath(import.meta.resolve('mermaid')));
     const purify = path.join(path.dirname(fromMermaid.resolve('dompurify')), 'purify.es.mjs');
-    const { default: DOMPurify } = await import(pathToFileURL(purify).href);
-    Object.assign(DOMPurify, { sanitize: (/** @type {string} */ text) => text, addHook() {}, removeHook() {}, removeHooks() {} });
+    // with a DOM (jsdom in a test runner) DOMPurify works as it is and the app may rely on it
+    if (typeof window === 'undefined') {
+      const { default: DOMPurify } = await import(pathToFileURL(purify).href);
+      Object.assign(DOMPurify, { sanitize: (/** @type {string} */ text) => text, addHook() {}, removeHook() {}, removeHooks() {} });
+    }
     const { default: mermaid } = await import('mermaid');
     mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default' });
     return mermaid;
@@ -34,15 +37,26 @@ function mermaidParser() {
 }
 
 /**
+ * For a diagram other than a flowchart that declares directives: a report saying they have no effect.
+ * @param {string} source
+ * @returns {Report | null}
+ */
+export function directivesIgnored(source) {
+  const { count, diagnostics } = parseDirectives(source);
+  if (!count && !diagnostics.length) return null;
+  return { understood: [], diagnostics: [{ severity: 'warning', message: 'directives apply to flowcharts only, so they have no effect on this diagram' }], directives: count, layout: null, colored: false };
+}
+
+/**
  * What the engine understands of a diagram, and the problems with its directives. The layout is not
  * computed, so the report has no layout and no notes about it; `render` has both.
  * @param {string} source Mermaid or Semantic Mermaid text
- * @returns {Promise<Report | null>} null for diagrams other than flowcharts, which directives do not apply to
+ * @returns {Promise<Report | null>} for a diagram other than a flowchart, null, or a warning when it declares directives
  */
 export async function checkDiagram(source) {
   const mermaid = await mermaidParser();
   const diagram = await mermaid.mermaidAPI.getDiagramFromText(source);
-  if (typeof diagram.db.getData !== 'function' || !String(diagram.type).startsWith('flowchart')) return null;
+  if (typeof diagram.db.getData !== 'function' || !String(diagram.type).startsWith('flowchart')) return directivesIgnored(source);
   const { annotations, diagnostics, count } = parseDirectives(source);
   const graph = buildGraph(diagram.db.getData());
   const resolved = resolveFacts(graph, annotations);

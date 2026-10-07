@@ -33,3 +33,8 @@ test('diagrams other than flowcharts have nothing to check', async () => {
 test('a parse error surfaces as Mermaid reports it', async () => {
   await assert.rejects(checkDiagram('flowchart TD\n  A --> B((\n'), /Parse error/);
 });
+
+test('directives on a diagram other than a flowchart are a warning that they have no effect', async () => {
+  const report = await checkDiagram('sequenceDiagram\n  A->>B: hi\n  %% @main A B');
+  assert.match(report?.diagnostics[0].message ?? '', /directives apply to flowcharts only/);
+});

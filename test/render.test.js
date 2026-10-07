@@ -59,7 +59,16 @@ test('automatic colours follow roles and leave author styles alone', async () =>
   assert.doesNotMatch(off.svg, /fill:#FDF2F2/);
 });
 
-test('other diagram types drawn with the semantic layout get plain ELK', async () => {
+test('the ELK baseline is drawn by ELK, and other diagram types keep Mermaid\'s own layout', async () => {
+  const elk = await renderer.render(ORDER, { layout: 'elk' });
+  const semantic = await renderer.render(ORDER);
+  assert.notEqual(elk.svg, semantic.svg);
+  assert.equal(elk.report, null);
+  const mindmap = await renderer.render('mindmap\n  root((Root))\n    A\n    B');
+  assert.match(mindmap.svg, /<svg/);
+});
+
+test('state and class diagrams render, and the engine leaves them alone', async () => {
   for (const source of ['stateDiagram-v2\n  [*] --> Idle\n  Idle --> Busy: job\n  Busy --> [*]', 'classDiagram\n  Animal <|-- Dog\n  Dog : +bark()']) {
     const { svg, report } = await renderer.render(source);
     assert.match(svg, /<svg/);
