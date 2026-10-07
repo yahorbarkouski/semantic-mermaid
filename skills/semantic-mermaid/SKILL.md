@@ -75,7 +75,7 @@ The CLI is the npm package `semantic-mermaid`. If the `semantic-mermaid` command
 - `@lanes`: when work passes back and forth between parties (people, teams, services), put each party's steps in a top-level `subgraph` and name the subgraphs in order. Use `flowchart TD` for lanes as columns, `LR` for lanes as rows. Lanes hold boxes only, no nested subgraphs, and the diagram has no other subgraphs. Stages a process passes through once (data, training, serving) are not lanes: keep them as plain subgraphs.
 - Keep labels on arrows to exit boxes and side boxes at 24 characters or fewer, and put at most two boxes beside one step; otherwise the box cannot sit beside its step. `check` warns about both.
 - Wrap a label that contains punctuation such as `(`, `)`, `:` or `#` in double quotes, `A["Pay (card)"]`, and write a double quote inside a label as `#quot;`.
-- A chain of more than about 15 steps reads better as `flowchart LR`, or split into several diagrams.
+- A chain of more than about 15 steps reads better split into several diagrams.
 - Put directives after the `flowchart` line, for example at the end. Frontmatter (`---`) must stay first.
 
 ## Example

@@ -6,11 +6,11 @@ The Mermaid language is awesome, but it was built for a time when humans wrote t
 
 We still use diagrams to explain and understand things. Mermaid's default layout knows nothing about that: it is intentless, so the drawing is often harder to grasp than the source. We extend the syntax with a few comment lines (`%% @main`, `@exit`, `@retry`, `@side`, `@lanes`) that say what the diagram actually means, run a sophisticated layout engine that draws it that way, and ship tools (a CLI, an SDK and an agent skill) so your agents can render better diagrams effortlessly.
 
-We tested Semantic Mermaid on 236 flowcharts, where it drew fewer arrow crossings and far fewer piled-up arrowheads than Mermaid's default layout, and had blind model judges compare the two on 20 more, picked as the most distinct diagram shapes. Semantic Mermaid **won 15, lost 0 and tied 5**, judged with colours off, so on layout alone.
+We tested Semantic Mermaid on 236 flowcharts, where, by the engine's own measures, it drew fewer arrow crossings and about a fifth fewer crowded arrow ends than Mermaid's default layout. Blind model judges then compared the two on 20 diagrams written with directives, chosen to show parties, retries, exits and reference material: Semantic Mermaid **won 15, lost 0 and tied 5**, judged with colours off, so on layout alone.
 
 ![A SAML sign-in handed between a browser, a service provider and an identity provider, drawn twice. On the left, Mermaid's ELK layout lays the three groups out as separate blocks, and the arrows between them cross, loop around and cut through group titles. On the right, Semantic Mermaid draws three lanes with time running down.](docs/images/sign-in.png)
 
-*The same source ([examples/sign-in.mmd](examples/sign-in.mmd)) drawn by Mermaid's ELK layout (left) and by Semantic Mermaid (right)*
+*The same source ([examples/sign-in.mmd](examples/sign-in.mmd)) drawn by Mermaid's ELK layout (left) and by Semantic Mermaid (right). Mermaid's own `swimlane-beta` diagram draws lanes too; [Compared with Mermaid's swimlanes](#compared-with-mermaids-swimlanes) shows how the two differ.*
 
 **Contents:** [How the extension looks like](#how-the-extension-looks-like) · [Directives](#directives) · [Auto-sized for the page](#auto-sized-for-the-page) · [Get started](#get-started) · [More examples](#more-examples) · [Compared with Mermaid's swimlanes](#compared-with-mermaids-swimlanes) · [How it works](#how-it-works) · [How we tested](#how-we-tested) · [Limits](#limits) · [Development](#development)
 
@@ -61,7 +61,7 @@ Every image `render` writes is drawn for the page it will be read on, about 800 
 
 *The same source ([samples/food-delivery.mmd](samples/food-delivery.mmd)) on two pages 800 px wide. Written left to right, it is 2024 px wide, and the page shows it at less than 40% of its size. `render` draws its lanes top-down instead, at full size, and prints a `note` line saying why.*
 
-`render --page-width 900` sets another page width, and `--no-fit` keeps the diagram as written, at its own width. In an app that renders with `install`, diagrams are turned only when the app passes the width of its column as `pageWidth`, and are never framed; see [docs/EMBEDDING.md](docs/EMBEDDING.md).
+`render --page-width 900` sets another page width, and `--no-fit` draws for no page: the diagram keeps its own width. In an app that renders with `install`, diagrams are turned for the page only when the app passes the width of its column as `pageWidth`, and are never framed; see [docs/EMBEDDING.md](docs/EMBEDDING.md). Either way, a drawing longer than 8:1 is also tried turned.
 
 ## Get started
 
@@ -116,7 +116,7 @@ Mermaid 11.16 added a swimlane diagram of its own, `swimlane-beta`, written like
 
 *The same nodes, arrows and lanes ([examples/expense.mmd](examples/expense.mmd)); for the left drawing only the first line was changed, to `swimlane-beta TD`. Both drawings are about the same size.*
 
-- **The agent states intent, and the engine picks the form.** `%% @lanes` says who does what, `@retry` which arrows send work back, and `@exit` which outcome ends the claim. The engine lays the diagram out both as lanes and as ordinary groups, scores each, and keeps the better, so the agent never has to choose a diagram type.
+- **The agent states intent, and the engine picks the form.** `%% @lanes` says who does what, `@retry` which arrows send work back, and `@exit` which outcome ends the claim. The engine lays the diagram out both as lanes and as ordinary groups, scores each, and keeps the better, so a lane declaration that doesn't fit costs little: stages a process passes through once come out as groups.
 - **Returns and exits stay beside their steps.** In `swimlane-beta`, the missing receipt goes back to finance on a detour down the page, along the bottom and up the right edge, and "Claim rejected" lands at the bottom, far from "Receipts complete?". Semantic Mermaid draws both returns as orange lines up the left of the Employee lane, each back to the step it repeats, and the rejection beside its decision.
 - **Time runs one way.** Steps are placed in rows by when they happen, so the claim reads top to bottom, and hand-offs cross between lanes in the gaps between rows.
 - **Hosts without the engine still draw it.** On GitHub or any other host that doesn't run Semantic Mermaid, a diagram with `@lanes` draws as an ordinary flowchart with subgraphs, because the directives are comments; drawing it in lanes takes the engine, which needs Mermaid 11 or 12. A `swimlane-beta` diagram draws in lanes on any host with Mermaid 11.16 or later, and not at all on an older one.
@@ -134,14 +134,14 @@ Mermaid 11.16 added a swimlane diagram of its own, `swimlane-beta`, written like
 
 ## How we tested
 
-- **The 20 judged diagrams** have parties, retries, exits and reference material. Agents wrote the directives for 15 of them using only the skill and the CLI; the engine's author wrote the other 5. Each was drawn from the same source by Semantic Mermaid and by ELK, Mermaid 12's default layout, with colours off. Two panels of Claude Sonnet judged each pair blind, one panel for each order, and a win needed both to agree; a pair they split on, or both called even, counts as a tie. All three swimlane diagrams won, five of their six verdicts "much better". Two of the 20 drawings have changed since they were judged, both with a straighter main path.
-- **The 236 ordinary flowcharts** are real ones from public repositories plus synthetic test diagrams, written without directives. Against ELK, arrow crossings fall from 443 to 430 and crowded arrow ends from 982 to 776. Every diagram that Mermaid itself can parse renders; two of the 236 put a comment line above their frontmatter, which Mermaid rejects. Dagre, the default before Mermaid 12, was not compared.
-- **Speed.** A check takes about 0.15 s from the command line. In the browser, a typical diagram renders in about 32 ms, against about 21 ms for ELK.
+- **The 20 judged diagrams** have parties, retries, exits and reference material; 11 of them are also among the 236. Agents wrote the directives for 15 of them using only the skill and the CLI; the engine's author wrote the other 5. Each was drawn from the same source by Semantic Mermaid and by ELK, Mermaid 12's default layout, with colours off. Two panels of Claude Sonnet judged each pair blind, one panel for each order, and a win needed both to agree; a pair they split on, or both called even, counts as a tie. The first round was 15 wins, 1 loss and 4 ties. The loss was pipeline stages declared as lanes; lanes then got a penalty, the skill now says stages are not lanes, and that pair, judged again, tied. Three of the four diagrams that declared lanes were drawn in lanes and won, five of their six verdicts "much better"; the fourth is that pipeline. Since the judging, two drawings have changed with a straighter main path, and at `render`'s default 800 px page two more are drawn top-down; `--no-fit` draws those two as judged.
+- **The 236 ordinary flowcharts** are real ones from public repositories plus synthetic test diagrams, written without directives. Against ELK, arrow crossings fall from 443 to 430 and crowded arrow ends (arrowheads or tails piled within 14 px) from 982 to 776, by the engine's own measures, the same ones it uses to choose a layout. Every diagram that Mermaid itself can parse renders; two of the 236 put a comment line above their frontmatter, which Mermaid rejects. Dagre, the default before Mermaid 12, was not compared.
+- **Speed.** A check takes about 0.15 s from the command line. In the browser, a typical diagram renders in about 34 ms, against about 23 ms for ELK.
 
 ## Limits
 
 - Flowcharts only (`flowchart` and `graph`); other diagram types keep Mermaid's own layout. [docs/EMBEDDING.md](docs/EMBEDDING.md) has the details for apps.
-- Mermaid 11 or 12. The engine brings its own patched copy of Mermaid's ELK plugin, so it does not depend on the ELK an app uses. Its tests pass on Mermaid 11.17 and 12.1, it draws the examples correctly back to 11.0, and CI checks the newest 11 and 12. Mermaid 11 draws boxes in its classic look, so there the same diagram can come out with a different layout. The CLI installs Mermaid 12, so it needs Node 22.12 or later, as Mermaid 12 does.
+- Mermaid 11 or 12. The engine brings its own patched copy of Mermaid's ELK plugin, so it does not depend on the ELK an app uses. Its tests pass on Mermaid 11.17 and 12.1, it renders the 17 examples back to 11.0, and CI checks the newest 11 and 12. Mermaid 11 draws boxes in its classic look, so there the same diagram can come out with a different layout. The CLI installs Mermaid 12, so it needs Node 22.12 or later, as Mermaid 12 does.
 - Each directive's rules, such as what a lane may hold, are in [docs/LANGUAGE.md](docs/LANGUAGE.md), and `check` says when a diagram breaks one.
 
 ## Development

@@ -2,7 +2,7 @@
 
 Semantic Mermaid is Mermaid flowchart syntax plus comment directives that state what the diagram means: which path is the main one, which arrows are exits or retries, which boxes only serve one step, which boxes are peers, which groups are parties that hand work back and forth. The layout engine reads them and draws the diagram accordingly.
 
-Every directive is a Mermaid comment (`%%`), so an annotated diagram is still plain Mermaid. GitHub, Notion, Obsidian and any other Mermaid host render it unchanged; hosts with the semantic layout draw it better.
+Every directive is a Mermaid comment (`%%`), so an annotated diagram is still plain Mermaid. GitHub, Notion, Obsidian and any other Mermaid host render it unchanged; hosts with the semantic layout draw it by its directives.
 
 ```
 flowchart TD

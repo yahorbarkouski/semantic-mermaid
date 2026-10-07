@@ -45,7 +45,7 @@ semantic-mermaid source order.svg
 | --- | --- | --- |
 | `-o <file>` | `render` | The image to write, `.svg` or `.png`; repeat it to write both |
 | `--page-width <px>` | `render` | The width of the page the image is for (default 800) |
-| `--no-fit` | `render` | Keep the diagram as written, at its own width |
+| `--no-fit` | `render` | Draw for no page: the diagram keeps its own width (a drawing longer than 8:1 is still tried turned) |
 | `--elk` | `render` | Draw the same diagram with Mermaid's ELK layout, for comparison |
 | `--no-colors` | `render` | Keep Mermaid's own colours |
 | `--verbose`, `-v` | `check`, `render` | Also print what the engine understood, and for `render` the layout it chose |
