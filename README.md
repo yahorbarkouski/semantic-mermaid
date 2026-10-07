@@ -1,10 +1,12 @@
 # Semantic Mermaid
 
-Mermaid flowcharts laid out by what they mean.
+Better Mermaid flowcharts when agents write and humans read.
 
-You add comment lines to a Mermaid flowchart that say what it means: which path is the main one, which arrows are exits or retries, which boxes only serve one step, which groups (`subgraph` blocks) are parties handing work back and forth. A layout engine reads those lines and draws the diagram to match. The lines are Mermaid comments (`%%`), so the same file still renders on GitHub, in Notion, or anywhere else Mermaid runs; those hosts draw it with their own layout, and for them the CLI below writes an SVG of the semantic layout to commit alongside the source.
+Mermaid language is awesome, but it was built for a time when humans wrote the code. Now most diagrams get written by agents, so writing the syntax is very cheap. The diagrams themselves are getting more complicated, and humans need even deeper understanding of what's going on. Semantic Mermaid is our attempt to make those diagrams more comprehensible.
 
-The comments are written for agents. An agent that writes a diagram already knows what it means, so it can state that meaning in a line, and the engine turns it into geometry. An agent skill and a CLI fit this into an agent's normal loop: one check that prints `ok` or the exact fix in about 0.1 s, and no picture to look at.
+We still use diagrams to explain and understand things. Mermaid's default layout doesn't know anything about that, it's intentless, so the drawing is often harder to grasp than the source. We extend the syntax with a few lines in comments (%% @main, @exit, @retry, @side, @lanes) that say what the diagram means, run a sophisticated layout engine that draws it that way, and ship tools (CLI/SDK + agent skill) so your agents can render better diagrams effortlessly.
+
+We tried it on 20 diagrams where layout really matters. Blind model judges compared our layout to Mermaid's ELK. Semantic Mermaid won 15, lost 0, tied 5. All three swimlane diagrams won.
 
 ![A SAML sign-in handed between a browser, a service provider and an identity provider, drawn twice. On the left, Mermaid's ELK layout lays the three groups out as separate blocks, and the arrows between them cross, loop around and cut through group titles. On the right, Semantic Mermaid draws three lanes with time running down.](docs/images/sign-in.png)
 
@@ -47,7 +49,7 @@ With these four lines, the path from "Order placed" to "Done" runs in one straig
 | `@colors off`     | Keep Mermaid's own colours                                                                       | No automatic colours                                                                                                    |
 
 
-Directives go anywhere after the `flowchart` line, usually at the end, and name boxes and subgraphs by their Mermaid ids. Plain Mermaid works too: without directives, the engine infers the main path, decisions and side boxes from the diagram's structure. The full reference is [docs/LANGUAGE.md](docs/LANGUAGE.md).
+Directives go anywhere after the `flowchart` line, usually at the end, and name boxes and subgraphs by their Mermaid ids. They are Mermaid comments (`%%`), so the same file still renders on GitHub, in Notion, or anywhere else Mermaid runs, with that host's own layout. Plain Mermaid works too: without directives, the engine infers the main path, decisions and side boxes from the diagram's structure. The full reference is [docs/LANGUAGE.md](docs/LANGUAGE.md).
 
 ## More examples
 
