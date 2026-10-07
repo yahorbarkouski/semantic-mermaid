@@ -65,6 +65,12 @@ function browserProblem(error) {
 }
 
 async function main() {
+  // Mermaid 12.1 needs Node 22.12; older versions fail later with errors that do not say so
+  const [major, minor] = process.versions.node.split('.').map(Number);
+  if (major < 22 || (major === 22 && minor < 12)) {
+    console.error(`semantic-mermaid needs Node 22.12 or later, as Mermaid 12.1 does; this is Node ${process.versions.node}`);
+    return 1;
+  }
   let parsed;
   try {
     parsed = parseArgs({
