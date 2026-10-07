@@ -2,12 +2,12 @@
 name: semantic-mermaid
 description: "Write flowcharts that lay out well. Use when drawing or editing a Mermaid flowchart (process, workflow, decision tree, pipeline, architecture) for docs, READMEs, pull requests or chat: add Semantic Mermaid directives that state what the diagram means."
 license: MIT
-compatibility: Checking and rendering use the semantic-mermaid CLI from npm, which needs Node 20.6 or later.
+compatibility: Checking and rendering use the semantic-mermaid CLI from npm, which needs Node 22.12 or later.
 ---
 
 # Semantic Mermaid
 
-Semantic Mermaid is Mermaid flowchart syntax plus comment lines that say what the diagram means. A layout engine reads them: the main path becomes one straight line, exits sit beside their decision, retries are drawn as returns, side boxes sit beside the step they serve, and parties become swimlanes. The lines are `%%` comments, so the diagram still renders anywhere Mermaid does, and a wrong directive cannot break it.
+Semantic Mermaid is Mermaid flowchart syntax plus comment lines that say what the diagram means. A layout engine reads them: the main path is kept in one line, exits sit beside their decision, retries are drawn as returns, side boxes sit beside the step they serve, and parties become swimlanes. The lines are `%%` comments, so the diagram still renders anywhere Mermaid does, and a wrong directive cannot break it.
 
 You know what the diagram means when you write it. State all of it, and the engine does the geometry. Never position boxes yourself or adjust the layout by trial and error.
 
@@ -18,23 +18,29 @@ You know what the diagram means when you write it. State all of it, and the engi
 3. If you have the `semantic-mermaid` CLI, check once. Pass the diagram on standard input with `-`, so no file is written:
 
    ```
-   semantic-mermaid check - <<'EOF'
+   semantic-mermaid check - <<'MMD'
    flowchart TD
      A([Order placed]) --> B{Payment ok?}
-     ...
-     %% @main A B C D E F
-   EOF
+     %% … the rest of the diagram, then its directives
+   MMD
    ```
 
    It prints `stdin: ok`, or each problem with what fixes it, such as the valid ids or where an arrow really leads. Fix those lines. When you will render in step 4, skip this step: `render` prints the same check. Without the CLI, skip it too.
-4. Deliver it in the form the reader's tool can show. `render` also reads the diagram from standard input and writes only the image named by `-o`. Never save the Mermaid source to a file of its own.
-   - A page that runs Semantic Mermaid: the Mermaid text is enough.
-   - GitHub, GitLab, Notion, or other Markdown that draws Mermaid itself: those hosts ignore the directives. Render an SVG into the repository with `semantic-mermaid render - -o docs/diagrams/order.svg <<'EOF'` (the diagram, then `EOF`), and embed it as an image: `![Order flow](docs/diagrams/order.svg)`. When the diagram changes, render the new version to the same file.
-   - A chat or a terminal: the diagram is temporary, so render it to a temporary file, `semantic-mermaid render - -o "$(mktemp -d)/order.png" <<'EOF'`, and share the PNG at the path `render` prints. Include the Mermaid source in your reply if the user may want to change it.
+4. Deliver it in the form the reader's tool can show. `render` reads the diagram from standard input too, writes only the image named by `-o` (creating its folder), and writes nothing while the diagram has errors. Never save the Mermaid source to a file of its own: every SVG that `render` writes carries the diagram's text.
+   - A page or app that says it draws Semantic Mermaid: the Mermaid text is enough.
+   - A file in a repository that GitHub or GitLab shows, such as a README or a doc: those hosts ignore the directives. Render an SVG into the repository, with the diagram between the `<<'MMD'` line and a closing `MMD` line as in step 3, and embed it as an image:
 
-   There is no need to open the image yourself. If `render` says the browser is not installed, run `semantic-mermaid setup` once.
+     ```
+     semantic-mermaid render - -o docs/diagrams/order.svg <<'MMD'
+     ```
 
-The CLI is the npm package `semantic-mermaid`. If the `semantic-mermaid` command is missing, ask the user whether to install it with `npm install -g semantic-mermaid`.
+     `![Order flow](docs/diagrams/order.svg)`. To change the diagram later, `semantic-mermaid source docs/diagrams/order.svg` prints the text it was drawn from; edit that text and render it to the same file.
+   - A place that takes only text, such as a pull-request or issue description, a comment, or a Notion page: put the diagram in a `mermaid` code block. The host draws it with its own layout, and the directives stay in it for anyone who renders it later.
+   - A chat or a terminal: the diagram is temporary, so render it to a temporary file, `semantic-mermaid render - -o "$(mktemp -d)/order.png" <<'MMD'`, and share the PNG at the path `render` prints. Include the Mermaid text in your reply if the user may want to change it.
+
+   There is no need to open the image yourself. If `render` says the browser is not installed, run `semantic-mermaid setup` once (it downloads about 95 MB). In PowerShell, pipe a here-string instead of a heredoc, `@'…'@ | semantic-mermaid check -`, and write temporary files under `$env:TEMP`.
+
+The CLI is the npm package `semantic-mermaid`. If the `semantic-mermaid` command is missing, ask the user whether to install it with `npm install -g semantic-mermaid`. If they decline, deliver the diagram in a `mermaid` code block.
 
 ## Directives
 
@@ -51,12 +57,13 @@ The CLI is the npm package `semantic-mermaid`. If the `semantic-mermaid` command
 ```
 
 - Name boxes by id, never by label. Write arrows as `From -> To`; separate several with commas.
-- `@main`: only boxes joined by arrows, in order. A process diagram almost always has one.
+- `@main`: boxes in order, with an arrow from each to the next, through each decision's normal outcome: the one the process expects, such as success, yes or valid. Where the path splits into peers, take one of them. A process diagram almost always has a main path.
 - `@exit`: only outcomes that end the flow early. A normal alternative is not an exit.
 - `@retry`: only arrows that go back to an earlier step.
 - `@side`: only boxes with exactly one arrow, or a group whose boxes all link to one step outside it.
-- `@lanes`: when work passes back and forth between parties (people, teams, services), put each party's steps in a top-level `subgraph` and name the subgraphs in order. Use `flowchart TD` for lanes as columns, `LR` for lanes as rows. Lanes hold boxes only, no nested subgraphs. Stages a process passes through once (data, training, serving) are not lanes: keep them as plain subgraphs.
-- Keep labels on exit arrows short (24 characters or fewer) so the exit can sit beside its decision.
+- `@lanes`: when work passes back and forth between parties (people, teams, services), put each party's steps in a top-level `subgraph` and name the subgraphs in order. Use `flowchart TD` for lanes as columns, `LR` for lanes as rows. Lanes hold boxes only, no nested subgraphs, and the diagram has no other subgraphs. Stages a process passes through once (data, training, serving) are not lanes: keep them as plain subgraphs.
+- Keep labels on arrows to exit boxes and side boxes at 24 characters or fewer, and put at most two boxes beside one step; otherwise the box cannot sit beside its step. `check` warns about both.
+- Wrap a label that contains punctuation such as `(`, `)`, `:` or `#` in double quotes, `A["Pay (card)"]`, and write a double quote inside a label as `#quot;`.
 - Put directives after the `flowchart` line, for example at the end. Frontmatter (`---`) must stay first.
 
 ## Example
@@ -80,11 +87,14 @@ flowchart TD
 
 ## What check reports
 
+With `@exit B -> X` in the example changed to `@exit B -> Y`:
+
 ```
-order.mmd: 1 error
-error: line 11: @exit: no node "Y"; ids are A, B, C, D, E, F, G, X, R
+stdin: 1 error
+error: line 12: @exit: no node "Y"; ids are A, B, C, D, E, F, G, X, R
 ```
 
-- `error`: the directive names a box or an arrow the diagram does not have, and the engine ignores it. Fix the line with the ids the message gives.
-- `warning`: the directive does not fit the diagram, for example a side box with two arrows. Fix it or delete the line.
-- `note`: the engine left a declared fact out of the layout because a layout without it scored better. No action is needed.
+- `error`: a directive the engine ignores, because it names a box or an arrow the diagram does not have, is misspelt, or is malformed. Fix the line as the message says. `render` writes no image while there are errors.
+- `warning`: the directive does not fit the diagram, for example a side box with two arrows or a label too long for the box to sit beside its step. Fix it or delete the line.
+- `note`, printed by `render` only: how the chosen layout differs from what you declared, for example peers out of order because keeping the order cost crossings. No action is needed.
+- A Mermaid syntax error comes as `Mermaid could not parse the diagram`, with Mermaid's own message and line.

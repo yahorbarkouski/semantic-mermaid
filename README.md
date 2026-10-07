@@ -77,20 +77,26 @@ Paste this into Claude Code, Codex, Cursor or any agent with a shell:
 
 ```text
 Install Semantic Mermaid, so the flowcharts you write lay out by what they mean:
-1. Install the skill: `npx skills add yahorbarkouski/semantic-mermaid -g -y`.
-2. Install its CLI: `npm install -g semantic-mermaid`, then `semantic-mermaid setup` (it downloads a headless browser, about 95 MB, used only to render images).
-3. Confirm it works: pipe the three lines `flowchart TD`, `A --> B` and `%% @main A B` into `semantic-mermaid check -`. It should print `stdin: ok`.
+1. Install the skill for yourself: `npx -y skills add yahorbarkouski/semantic-mermaid -g -y -a <agent>`, where <agent> is your own id in the skills CLI, such as `claude-code`, `codex` or `cursor`.
+2. Install its CLI, which needs Node 22.12 or later: `npm install -g semantic-mermaid`, then `semantic-mermaid setup` (it downloads a headless browser, about 95 MB, used only to render images).
+3. Confirm it works by running this command as it is; it should print a `wrote` line and `stdin: ok`:
+
+semantic-mermaid render - -o "$(mktemp -d)/check.svg" <<'MMD'
+flowchart TD
+  A --> B
+  %% @main A B
+MMD
 ```
 
 ### Install it yourself
 
-The skill is on [skills.sh](https://skills.sh/yahorbarkouski/semantic-mermaid). This installs it for the agents you pick, such as Claude Code, Codex or Cursor:
+The skill is on [skills.sh](https://skills.sh/yahorbarkouski/semantic-mermaid). This installs it for every project; it asks which agents to install it for, such as Claude Code, Codex or Cursor, and you select yours with the space bar:
 
 ```bash
-npx skills add yahorbarkouski/semantic-mermaid
+npx skills add yahorbarkouski/semantic-mermaid -g
 ```
 
-The skill checks and renders diagrams with the `semantic-mermaid` CLI, which needs Node 20.6 or later:
+The skill checks and renders diagrams with the `semantic-mermaid` CLI, which needs Node 22.12 or later:
 
 ```bash
 npm install -g semantic-mermaid
@@ -100,17 +106,17 @@ npm install -g semantic-mermaid
 semantic-mermaid setup
 ```
 
-`check` runs Mermaid's parser in Node and works right after `npm install`. `setup` downloads the headless browser that `render` draws in (about 95 MB, 200 MB unpacked), once.
+`check` runs Mermaid's parser in Node and works right after `npm install`, which takes about 220 MB, most of it Mermaid. `setup` downloads the headless browser that `render` draws in (about 95 MB, 200 MB unpacked), once. On Linux the browser also needs system libraries; if they are missing, `render`'s error message gives the command that installs them.
 
-To use the layout in a web page, or the Node API, add the package to your project with `npm install semantic-mermaid mermaid`.
+To use the layout in a web page, or the Node API, add the package to your project with `npm install semantic-mermaid mermaid@~12.1.0`.
 
 ## Use it
 
 ### From an agent
 
-With the skill installed, the agent's loop stays close to writing plain Mermaid: write the flowchart, add a directive for everything it means, check once, and deliver. A check takes about 0.1 s and prints `ok` or the exact fix. A wrong directive cannot break the diagram, because the lines are comments, and the agent never opens an image to inspect it.
+With the skill installed, the agent's loop stays close to writing plain Mermaid: write the flowchart, add a directive for everything it means, check once, and deliver. A check takes about 0.15 s and prints `ok` or the exact fix. A wrong directive cannot break the diagram, because the lines are comments, and the agent never opens an image to inspect it.
 
-What the agent delivers depends on where the diagram will be read. A page that runs Semantic Mermaid draws the Mermaid text itself. GitHub, GitLab and Notion draw Mermaid with their own layout and ignore the directives, so there the agent pipes the diagram into `semantic-mermaid render` and embeds the SVG it writes as an image. In a chat or a terminal it renders a PNG to a temporary file and shares it. The agent never saves the Mermaid source to a file of its own. The skill itself is [skills/semantic-mermaid/SKILL.md](skills/semantic-mermaid/SKILL.md).
+What the agent delivers depends on where the diagram will be read. A page that runs Semantic Mermaid draws the Mermaid text itself. GitHub and GitLab draw Mermaid with their own layout and ignore the directives, so for a file in a repository the agent pipes the diagram into `semantic-mermaid render` and embeds the SVG it writes as an image. The SVG carries the diagram's text, and `semantic-mermaid source` prints it when the diagram needs to change, so the agent never saves the Mermaid source to a file of its own. Where only text fits, such as a pull-request description, the agent writes a `mermaid` code block. In a chat or a terminal it renders a PNG to a temporary file and shares it. The skill itself is [skills/semantic-mermaid/SKILL.md](skills/semantic-mermaid/SKILL.md).
 
 ### From the command line
 
@@ -122,7 +128,11 @@ semantic-mermaid check examples/order.mmd
 semantic-mermaid render examples/order.mmd -o order.svg -o order.png
 ```
 
-A file argument of `-` reads the diagram from standard input, so a diagram another program writes never needs a file; `render -` then takes the image to write from `-o`. `check` prints `ok`, or each problem with its line and what fixes it, and exits with status 1 when there is an error:
+```bash
+semantic-mermaid source order.svg
+```
+
+A file argument of `-` reads the diagram from standard input, so a diagram another program writes never needs a file; `render -` then takes the image to write from `-o`. `render` creates the image's folder, and writes nothing while the diagram has errors. Every SVG it writes carries the diagram's text, which `source` prints. `check` prints `ok`, or each problem with its line and what fixes it, and exits with status 1 when there is an error:
 
 ```
 order.mmd: 1 error
@@ -152,19 +162,19 @@ The score is the engine's own measure, and it compares layouts of the same diagr
 
 ### In a web page
 
-The engine registers as a Mermaid 12 layout named `semantic`:
+The engine registers as a Mermaid 12 layout named `semantic`. In an app that already renders Mermaid, one call opts in the flowcharts that carry directives and leaves every other diagram as it was:
 
 ```js
 import mermaid from 'mermaid';
 import { install } from 'semantic-mermaid';
 
-const semantic = install(mermaid);           // registers the "semantic" layout
-mermaid.initialize({ layout: 'semantic' });
+const semantic = install(mermaid, { apply: 'directives' });
+mermaid.initialize({ startOnLoad: false });
 const { svg } = await mermaid.render('d1', source);
 semantic.report('d1');                       // what the engine understood and chose
 ```
 
-Mermaid strips comments before layout, so `install` wraps `mermaid.render` to hand each diagram's source to the engine. Diagrams drawn through `mermaid.run` with the `semantic` layout still get it, with their meaning inferred from structure.
+Mermaid strips comments before layout, so `install` wraps `mermaid.render` to hand each diagram's text to the engine. [docs/EMBEDDING.md](docs/EMBEDDING.md) covers the rest for app developers: the other ways to opt diagrams in, themes, and what the layout costs in download size and render time.
 
 ### From Node
 
@@ -196,18 +206,18 @@ await renderer.close();
 ## How well it works
 
 - **Diagrams where meaning matters.** 20 flowcharts with parties, retries, exits and reference material were drawn twice from the same annotated source, once by Mermaid's ELK layout and once by Semantic Mermaid. Two Claude agents annotated 15 of them using only the skill and the CLI; the engine's author annotated the other 5. Blind panels of Claude Sonnet compared each pair with colours off, once in each order, and a win needed both panels to agree. Semantic Mermaid won 15, lost none and tied 5 (a tie is a pair both panels called even, or one they disagreed on). All three diagrams drawn as swimlanes won, and five of their six verdicts were the strongest grade, "much better".
-- **Ordinary diagrams.** On 236 flowcharts, real ones from public repositories plus synthetic test diagrams, every diagram, written in plain Mermaid without directives, renders without errors. Against ELK, arrow crossings fall from 443 to 429, and crowded arrow ends (combs, stacked arrowheads) from 982 to 774.
-- **Speed.** A check parses only and takes about 0.1 s from the command line. The median render takes 87 ms in the browser, against 34 ms for plain ELK, because the engine lays the diagram out several times.
+- **Ordinary diagrams.** On 236 flowcharts, real ones from public repositories plus synthetic test diagrams, every diagram, written in plain Mermaid without directives, renders without errors. Against ELK, arrow crossings fall from 443 to 430, and crowded arrow ends (combs, stacked arrowheads) from 982 to 776.
+- **Speed.** A check parses only and takes about 0.15 s from the command line. In the browser, the median render of the 236 flowcharts takes 60 ms, against 34 ms for plain ELK, because the engine lays each diagram out several times.
 
-The judges are language models, one panel for each order, and the 20 diagrams were chosen to show the patterns the engine acts on, so read the first result as a showcase. On ordinary diagrams the goal is to stay at least even with ELK. Mermaid's default layout, dagre, was not part of these comparisons.
+The judges are language models, one panel for each order, and the 20 diagrams were chosen to show the patterns the engine acts on, so read the first result as a showcase. Two of the 20 drawings have changed since they were judged, both with a straighter main path. On ordinary diagrams the goal is to stay at least even with ELK. Mermaid's default layout, dagre, was not part of these comparisons.
 
 ## Limits
 
-- Flowcharts only (`flowchart` and `graph`). Other Mermaid diagram types are drawn as usual.
-- Lanes need a top-down or left-to-right diagram and top-level groups that hold boxes only, and the diagram can't have other groups besides the lanes.
-- A box beside its step must be in the same group as the step, and the arrow between them can carry a label of at most 24 characters.
-- Automatic colours are tuned for Mermaid's light themes and switch off for the others.
-- The vendored plugin ties the engine to Mermaid 12.1.
+- Flowcharts only (`flowchart` and `graph`). With `install`'s `apply` option, other diagram types keep Mermaid's configured layout; with `layout: 'semantic'` set in Mermaid's configuration, they get Mermaid's ELK layout, and mindmaps fail to render as they do under ELK.
+- Lanes need top-level groups that hold boxes only, and the diagram can't have other groups besides the lanes. A bottom-up or right-to-left diagram gets its lanes drawn top-down or left-to-right.
+- A box beside its step must be in the same group as the step, the arrow between them can carry a label of at most 24 characters, and at most two boxes sit beside one step. `check` warns when a declared box breaks these limits.
+- Automatic colours have a light and a dark palette, chosen by Mermaid's theme; under `forest` they switch off.
+- The vendored plugin ties the engine to Mermaid 12.1, and the CLI needs Node 22.12 or later, as Mermaid 12.1 does.
 
 
 
@@ -237,6 +247,10 @@ node scripts/compare.js path/to/diagrams --out /tmp/compare   # every diagram in
 
 ```bash
 npm run vendor       # refresh vendor/layout-elk from node_modules and apply the patches
+```
+
+```bash
+npm run types        # write the type declarations into types/, as npm pack does
 ```
 
 ## License
