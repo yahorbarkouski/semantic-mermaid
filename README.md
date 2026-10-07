@@ -16,17 +16,17 @@ Semantic Mermaid lets the author, usually an agent, say what the diagram means i
 
 A layout engine reads them and draws the diagram that way: the main path in one line, exits beside their decision, loops drawn back along the side, side inputs such as a config or a runbook beside the step they feed, and parties in swimlanes. Because the lines are comments, GitHub and every other Mermaid host still draw the file, with their own layout. A CLI and an agent skill, instructions a coding agent loads, let your agents write, check and render these diagrams on their own, and an app that already shows Mermaid turns the engine on with one JavaScript call.
 
-- **15 wins, 0 losses against ELK.** We picked 20 diagrams whose meaning (parties, retries, exits) is what layouts get wrong. Blind model judges compared each one drawn by Semantic Mermaid and by ELK, the layered layout Mermaid offers besides its default and the one this engine builds on, once in each order; a win needed both orders to agree. The other 5 were ties. All three swimlane diagrams won, five of their six verdicts "much better", the strongest grade.
+- **15 wins, 0 losses against Mermaid's default layout.** We picked 20 diagrams whose meaning (parties, retries, exits) is what layouts get wrong. Blind model judges compared each one drawn by Semantic Mermaid and by ELK, the layout Mermaid 12 draws flowcharts with by default and the one this engine builds on, once in each order; a win needed both orders to agree. The other 5 were ties. All three swimlane diagrams won, five of their six verdicts "much better", the strongest grade.
 - **Agents write it.** Agents wrote the directives for 15 of those 20 diagrams using nothing but the skill and the CLI; the other 5 were written by hand.
 - **Better on plain Mermaid too.** On 236 flowcharts written without any directives, it drew far fewer piled-up arrowheads (776 against 982) and slightly fewer crossings (430 against 443) than ELK.
 
 ![A SAML sign-in handed between a browser, a service provider and an identity provider, drawn twice. On the left, Mermaid's ELK layout lays the three groups out as separate blocks, and the arrows between them cross, loop around and cut through group titles. On the right, Semantic Mermaid draws three lanes with time running down.](docs/images/sign-in.png)
 
-*The same source ([examples/sign-in.mmd](examples/sign-in.mmd)) drawn by Mermaid's ELK layout (left) and by Semantic Mermaid (right). ELK, the Eclipse Layout Kernel, is the layered layout Mermaid offers as an alternative to its default. One line,* `%% @lanes UA SP IdP`*, names the three subgraphs by their ids (Browser, Service provider and Identity provider) and turns them into swimlanes: every step sits in its party's lane, time runs down, and hand-offs cross between lanes in the gaps between steps. The orange line is the declared retry from the last step back to the first, drawn down the left side of the Browser lane.*
+*The same source ([examples/sign-in.mmd](examples/sign-in.mmd)) drawn by Mermaid's ELK layout (left) and by Semantic Mermaid (right). ELK, the Eclipse Layout Kernel, is the layered layout Mermaid 12 draws flowcharts with by default. One line,* `%% @lanes UA SP IdP`*, names the three subgraphs by their ids (Browser, Service provider and Identity provider) and turns them into swimlanes: every step sits in its party's lane, time runs down, and hand-offs cross between lanes in the gaps between steps. The orange line is the declared retry from the last step back to the first, drawn down the left side of the Browser lane.*
 
-**Contents:** [What you write](#what-you-write) · [Directives](#directives) · [Sized for the page](#sized-for-the-page) · [Install](#install) · [More examples](#more-examples) · [Use it](#use-it) · [How it works](#how-it-works) · [How well it works](#how-well-it-works) · [Limits](#limits) · [Development](#development)
+**Contents:** [What an agent writes](#what-an-agent-writes) · [Directives](#directives) · [Sized for the page](#sized-for-the-page) · [Install](#install) · [More examples](#more-examples) · [Compared with Mermaid's swimlanes](#compared-with-mermaids-swimlanes) · [Use it](#use-it) · [How it works](#how-it-works) · [How well it works](#how-well-it-works) · [Limits](#limits) · [Development](#development)
 
-## What you write
+## What an agent writes
 
 ```
 flowchart TD
@@ -132,6 +132,18 @@ To use the layout in a web page, or the Node API, add the package to your projec
 
 The sources of these figures are in [examples/](examples/), and [samples/](samples/) has ten more annotated diagrams with side-by-side ELK comparisons.
 
+## Compared with Mermaid's swimlanes
+
+Mermaid 11.16 added a swimlane diagram of its own, `swimlane-beta`, written like a flowchart with its lanes as subgraphs. Here is the SAML sign-in from the top of this page drawn by it and by Semantic Mermaid:
+
+![The SAML sign-in drawn twice in three lanes. On the left, Mermaid's swimlane-beta puts steps from different lanes on shared rows, so some arrows run sideways and back up and two cross with small hops. On the right, Semantic Mermaid gives every step its own row, and the declared retry is an orange return down the left.](docs/images/swimlanes.png)
+
+*The same nodes, arrows and subgraphs ([examples/sign-in.mmd](examples/sign-in.mmd)); for the left drawing only the first line was changed, to `swimlane-beta TB`.*
+
+- **The agent states intent, and the engine picks the form.** `%% @lanes` says who does what. The engine lays the diagram out both as lanes and as ordinary groups, scores each, and keeps the better, so stages a process passes through once come out as groups, and the agent never has to choose a diagram type. The main path, exits and retries still apply inside the lanes: the declared retry is the orange return on the left.
+- **Time runs one way.** Every step gets its own row, so the process reads top to bottom, and hand-offs cross between lanes in the gaps between steps. `swimlane-beta` puts steps from different lanes on shared rows, so some arrows run against the flow; for example, "Follow redirect to IdP" climbs back over the top row to reach "Parse AuthnRequest". `swimlane-beta` draws the more compact picture: 1,092 px tall against 1,570, at similar widths (818 and 757 px).
+- **The file stays a flowchart.** Every Mermaid host draws a diagram with `@lanes`, as plain subgraphs where the host does not run the engine. A `swimlane-beta` diagram needs Mermaid 11.16 or later, and fails to render on older hosts.
+
 ## Use it
 
 ### From an agent
@@ -233,7 +245,7 @@ await renderer.close();
 - **Ordinary diagrams.** On 236 flowcharts, real ones from public repositories plus synthetic test diagrams, written in plain Mermaid without directives, every diagram that Mermaid itself can parse renders without errors; the other two put a comment line above their frontmatter, which Mermaid rejects. Against ELK, arrow crossings fall from 443 to 430, and crowded arrow ends (combs, stacked arrowheads) from 982 to 776.
 - **Speed.** A check parses only and takes about 0.15 s from the command line. In the browser, the median render of the 236 flowcharts takes 60 ms, against 34 ms for plain ELK, because the engine lays each diagram out several times.
 
-The judges are language models, one panel for each order, and the 20 diagrams were chosen to show the patterns the engine acts on, so read the first result as a showcase. Two of the 20 drawings have changed since they were judged, both with a straighter main path. On ordinary diagrams the goal is to stay at least even with ELK. Mermaid's default layout, dagre, was not part of these comparisons.
+The judges are language models, one panel for each order, and the 20 diagrams were chosen to show the patterns the engine acts on, so read the first result as a showcase. Two of the 20 drawings have changed since they were judged, both with a straighter main path. On ordinary diagrams the goal is to stay at least even with ELK. ELK is Mermaid 12's default flowchart layout; dagre, the default before Mermaid 12, was not part of these comparisons.
 
 ## Limits
 

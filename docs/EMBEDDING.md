@@ -13,7 +13,7 @@ const { svg } = await mermaid.render('diagram-1', source);
 semantic.report('diagram-1'); // undefined unless the semantic layout drew this diagram
 ```
 
-With `apply: 'directives'`, a flowchart that contains Semantic Mermaid directives is drawn by the semantic layout, and every other diagram is drawn exactly as before. Directives are comment lines such as `%% @main A B C` and `%% @lanes User App`, described in [LANGUAGE.md](LANGUAGE.md). The cost is about 24 KB gzipped when the page loads, 656 KB gzipped more the first time a diagram uses the semantic layout, and about 32 ms per diagram, where Mermaid's default layout takes about 19 ms.
+With `apply: 'directives'`, a flowchart that contains Semantic Mermaid directives is drawn by the semantic layout, and every other diagram is drawn exactly as before. Directives are comment lines such as `%% @main A B C` and `%% @lanes User App`, described in [LANGUAGE.md](LANGUAGE.md). The cost is about 24 KB gzipped when the page loads, 656 KB gzipped more the first time a diagram uses the semantic layout, and about 32 ms per diagram, where ELK, Mermaid 12's default flowchart layout, takes about 21 ms.
 
 ## Requirements
 
@@ -62,7 +62,7 @@ Directives reach the engine only through `mermaid.render(id, text)`, the call th
 
 For an app that shows model output, use `apply: 'directives'`. Diagrams your users already have keep their current look, and a diagram that carries directives was written for the semantic layout. A diagram whose only directive is misspelt is selected too, so its report can say what is wrong.
 
-`apply: 'flowcharts'` also redraws flowcharts written without directives, and colours their starts, ends, decisions and side boxes. On 236 such flowcharts, the semantic layout drew fewer arrow crossings than Mermaid's ELK layout (430 against 443) and fewer crowded arrow ends (776 against 982). It has not been compared with Mermaid's default layout, dagre, so look at your own diagrams before you switch.
+`apply: 'flowcharts'` also redraws flowcharts written without directives, and colours their starts, ends, decisions and side boxes. On 236 such flowcharts, the semantic layout drew fewer arrow crossings than ELK, Mermaid 12's default flowchart layout (430 against 443), and fewer crowded arrow ends (776 against 982). It has not been compared with dagre, the default before Mermaid 12, so if your app still draws with dagre, look at your own diagrams before you switch.
 
 Setting `layout: 'semantic'` in Mermaid's configuration also works. Diagram types that follow Mermaid's layout setting then get Mermaid's ELK layout, which the semantic layout builds on. Mindmaps fail to render under it, as they do under `layout: 'elk'` in Mermaid 12.1.
 
@@ -123,8 +123,8 @@ Render times for 16 flowcharts of 5 to 15 boxes, the diagrams in this repository
 
 | Layout | Median render | Slowest render |
 | --- | --- | --- |
-| dagre (Mermaid's default) | 19 ms | 27 ms |
-| Mermaid's ELK layout | 21 ms | 37 ms |
+| dagre (the default before Mermaid 12) | 19 ms | 27 ms |
+| ELK (Mermaid 12's default) | 21 ms | 37 ms |
 | Semantic | 32 ms | 77 ms |
 
 The semantic layout runs ELK several times with different settings, scores each result, and keeps the best one. The first semantic render in a page also loads and compiles the ELK code; served locally, it took about 210 ms. Large diagrams cost more: a real flowchart with 90 arrows takes about 0.5 s, and the engine limits its most expensive layout on densely cross-linked graphs, which still take up to a few seconds.
