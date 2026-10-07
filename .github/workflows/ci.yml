@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [20, 22]
+        node: [22, 24]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,6 +18,19 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # the system libraries the headless browser needs, then the browser itself, installed the way users install it
+      - run: npx playwright install-deps chromium
+      - run: node toolchain/cli.js setup
       - run: npm run check-types
       - run: npm test
+      - name: the packed package installs and runs
+        run: |
+          npm pack
+          npm install -g ./semantic-mermaid-*.tgz
+          semantic-mermaid --version
+          semantic-mermaid render - -o "$RUNNER_TEMP/check.svg" <<'MMD'
+          flowchart TD
+            A --> B
+            %% @main A B
+          MMD
+          semantic-mermaid source "$RUNNER_TEMP/check.svg"

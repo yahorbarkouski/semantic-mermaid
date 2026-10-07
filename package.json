@@ -24,33 +24,52 @@
     "semantic-mermaid": "toolchain/cli.js"
   },
   "exports": {
-    ".": "./src/index.js",
-    "./language": "./src/language/directives.js",
-    "./check": "./toolchain/check.js",
-    "./toolchain": "./toolchain/render.js"
+    ".": {
+      "types": "./types/src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./language": {
+      "types": "./types/src/language/directives.d.ts",
+      "default": "./src/language/directives.js"
+    },
+    "./check": {
+      "types": "./types/toolchain/check.d.ts",
+      "default": "./toolchain/check.js"
+    },
+    "./toolchain": {
+      "types": "./types/toolchain/render.d.ts",
+      "default": "./toolchain/render.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "src",
     "toolchain",
     "vendor",
-    "docs/LANGUAGE.md"
+    "types"
   ],
   "scripts": {
     "test": "node --test test/*.test.js",
     "check-types": "tsc -p jsconfig.json",
+    "types": "tsc -p tsconfig.types.json",
+    "prepack": "npm run types",
+    "prepublishOnly": "npm run check-types && npm test",
     "images": "node scripts/readme-images.js",
     "vendor": "node scripts/vendor-layout-elk.js"
   },
   "engines": {
-    "node": ">=20.6"
+    "node": ">=22.12"
+  },
+  "peerDependencies": {
+    "mermaid": "~12.1.0"
   },
   "dependencies": {
-    "mermaid": "12.1.0",
     "playwright": "^1.63.0"
   },
   "devDependencies": {
     "@mermaid-js/layout-elk": "1.0.1",
     "@types/node": "^22.20.5",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "mermaid": "12.1.0"
   }
 }
