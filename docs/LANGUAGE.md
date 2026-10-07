@@ -21,9 +21,9 @@ flowchart TD
   %% @side R
 ```
 
-![The order flow drawn by the semantic layout](../examples/order.png)
+<p align="center"><img src="images/order.png" alt="The order flow drawn by Mermaid's ELK layout and by Semantic Mermaid" width="640"></p>
 
-With these directives the main path runs in one straight column, "Notify customer" sits beside the payment decision on the same row, the backorder loop is drawn as a return, and the fraud rules sit beside the decision they feed.
+On the right, with these directives the main path runs in one straight column, "Notify customer" sits beside the payment decision on the same row, the backorder loop is drawn as a return, and the fraud rules sit beside the decision they feed.
 
 ## Directives
 

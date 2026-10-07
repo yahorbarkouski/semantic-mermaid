@@ -53,22 +53,6 @@ With these four lines, the path from "Order placed" to "Done" runs in one straig
 
 Directives go anywhere after the `flowchart` line, usually at the end, and name boxes and subgraphs by their Mermaid ids. They are Mermaid comments (`%%`), so the same file still renders on GitHub, in Notion, or anywhere else Mermaid runs, with that host's own layout. Plain Mermaid works too: without directives, the engine infers the main path, decisions and side boxes from the diagram's structure. The full reference is [docs/LANGUAGE.md](docs/LANGUAGE.md).
 
-## More examples
-
-![Employee onboarding across Employee, HR and IT, drawn by ELK as three separate blocks with tangled arrows and by Semantic Mermaid as three horizontal lanes.](docs/images/onboarding.png)
-
-*Lanes in a left-to-right diagram are rows, and time runs right. The "No" branch leaves the decision from the corner facing its target. The fix-up step comes back into the corner where the decision's inputs arrive.*
-
-![An incident process with two groups of reference material, drawn by ELK with the groups above the flow and by Semantic Mermaid with each group beside the step it feeds.](docs/images/incident.png)
-
-`@side Signals Playbooks`*: each group of references sits beside the step it feeds, and the main path stays one column.*
-
-![An API gateway with four rejections, drawn by ELK as a descending staircase and by Semantic Mermaid as one straight row with the rejections below.](docs/images/gateway.png)
-
-*Four* `@exit` *arrows: the request path is one row, and the rejections drop below it.*
-
-The sources of these figures are in [examples/](examples/), each with a picture of its semantic layout.
-
 ## Install
 
 ### Ask your agent
@@ -109,6 +93,22 @@ semantic-mermaid setup
 `check` runs Mermaid's parser in Node and works right after `npm install`, which takes about 220 MB, most of it Mermaid. `setup` downloads the headless browser that `render` draws in (about 95 MB, 200 MB unpacked), once. On Linux the browser also needs system libraries; if they are missing, `render`'s error message gives the command that installs them.
 
 To use the layout in a web page, or the Node API, add the package to your project with `npm install semantic-mermaid mermaid@~12.1.0`.
+
+## More examples
+
+![Employee onboarding across Employee, HR and IT, drawn by ELK as three separate blocks with tangled arrows and by Semantic Mermaid as three horizontal lanes.](docs/images/onboarding.png)
+
+*Lanes in a left-to-right diagram are rows, and time runs right. The "No" branch leaves the decision from the corner facing its target. The fix-up step comes back into the corner where the decision's inputs arrive.*
+
+![An incident process with two groups of reference material, drawn by ELK with the groups above the flow and by Semantic Mermaid with each group beside the step it feeds.](docs/images/incident.png)
+
+`@side Signals Playbooks`*: each group of references sits beside the step it feeds, and the main path stays one column.*
+
+![An API gateway with four rejections, drawn by ELK as a descending staircase and by Semantic Mermaid as one straight row with the rejections below.](docs/images/gateway.png)
+
+*Four* `@exit` *arrows: the request path is one row, and the rejections drop below it.*
+
+The sources of these figures are in [examples/](examples/), and [samples/](samples/) has ten more annotated diagrams with side-by-side ELK comparisons.
 
 ## Use it
 
