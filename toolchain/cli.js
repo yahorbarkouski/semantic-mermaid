@@ -4,7 +4,6 @@
 //   semantic-mermaid check diagram.mmd [--verbose] [--json]
 //   semantic-mermaid render diagram.mmd [-o diagram.svg] [-o diagram.png] [--elk] [--no-colors] [--verbose] [--json]
 //   semantic-mermaid setup   download the headless browser render uses, once
-//   semantic-mermaid skill   print the agent skill, for the agent's skills folder
 //
 // A file argument of "-" reads the diagram from standard input. `render` writes each -o file in the
 // format its name ends in (.svg or .png), and diagram.svg beside the source when no -o is given. Both
@@ -23,19 +22,12 @@ import { checkDiagram } from './check.js';
 const USAGE = `usage:
   semantic-mermaid check <file.mmd|-> [--verbose] [--json]
   semantic-mermaid render <file.mmd|-> [-o out.svg|out.png ...] [--elk] [--no-colors] [--verbose] [--json]
-  semantic-mermaid setup    download the headless browser that render uses (once, about 95 MB)
-  semantic-mermaid skill    print the agent skill, to save in your agent's skills folder`;
+  semantic-mermaid setup    download the headless browser that render uses (once, about 95 MB)`;
 
 /** The browser `render` uses: Playwright's headless Chromium, the build this package's Playwright expects. */
 function setup() {
   const playwright = path.join(path.dirname(createRequire(import.meta.url).resolve('playwright')), 'cli.js');
   return spawnSync(process.execPath, [playwright, 'install', '--only-shell', 'chromium'], { stdio: 'inherit' }).status ?? 1;
-}
-
-/** The skill, as installed with this version of the CLI. */
-function skill() {
-  process.stdout.write(fs.readFileSync(new URL('../skill/SKILL.md', import.meta.url), 'utf8'));
-  return 0;
 }
 
 async function main() {
@@ -53,7 +45,6 @@ async function main() {
   });
   const [command, file] = positionals;
   if (command === 'setup' && !values.help) return setup();
-  if (command === 'skill' && !values.help) return skill();
   if (values.help || !command || !file || !['render', 'check'].includes(command)) {
     console.log(USAGE);
     return command && !values.help ? 2 : 0;

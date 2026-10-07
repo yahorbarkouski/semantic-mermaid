@@ -13,6 +13,12 @@
   ],
   "author": "Yahor Barkouski",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yahorbarkouski/semantic-mermaid.git"
+  },
+  "homepage": "https://github.com/yahorbarkouski/semantic-mermaid#readme",
+  "bugs": "https://github.com/yahorbarkouski/semantic-mermaid/issues",
   "type": "module",
   "bin": {
     "semantic-mermaid": "toolchain/cli.js"
@@ -27,7 +33,6 @@
     "src",
     "toolchain",
     "vendor",
-    "skill",
     "docs/LANGUAGE.md"
   ],
   "scripts": {

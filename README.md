@@ -1,5 +1,7 @@
 # Semantic Mermaid
 
+[![skills.sh](https://skills.sh/b/yahorbarkouski/semantic-mermaid)](https://skills.sh/yahorbarkouski/semantic-mermaid)
+
 Better Mermaid flowcharts when agents write and humans read.
 
 Mermaid language is awesome, but it was built for a time when humans wrote the code. Now most diagrams get written by agents, so writing the syntax is very cheap. The diagrams themselves are getting more complicated, and humans need even deeper understanding of what's going on. Semantic Mermaid is our attempt to make those diagrams more comprehensible.
@@ -75,14 +77,20 @@ Paste this into Claude Code, Codex, Cursor or any agent with a shell:
 
 ```text
 Install Semantic Mermaid, so the flowcharts you write lay out by what they mean:
-1. Run `npm install -g semantic-mermaid`, then `semantic-mermaid setup` (it downloads a headless browser, about 95 MB, used only to render images).
-2. Save the output of `semantic-mermaid skill` as a skill named semantic-mermaid in your skills folder (for Claude Code: ~/.claude/skills/semantic-mermaid/SKILL.md).
+1. Install the skill: `npx skills add yahorbarkouski/semantic-mermaid -g -y`.
+2. Install its CLI: `npm install -g semantic-mermaid`, then `semantic-mermaid setup` (it downloads a headless browser, about 95 MB, used only to render images).
 3. Confirm it works: write `flowchart TD` + `A --> B` + `%% @main A B` to a temporary .mmd file and run `semantic-mermaid check` on it. It should report the file as ok.
 ```
 
 ### Install it yourself
 
-Semantic Mermaid needs Node 20.6 or later.
+The skill is on [skills.sh](https://skills.sh/yahorbarkouski/semantic-mermaid). This installs it for the agents you pick, such as Claude Code, Codex or Cursor:
+
+```bash
+npx skills add yahorbarkouski/semantic-mermaid
+```
+
+The skill checks and renders diagrams with the `semantic-mermaid` CLI, which needs Node 20.6 or later:
 
 ```bash
 npm install -g semantic-mermaid
@@ -92,11 +100,7 @@ npm install -g semantic-mermaid
 semantic-mermaid setup
 ```
 
-`check` runs Mermaid's parser in Node and works right after the first command. `setup` downloads the headless browser that `render` draws in (about 95 MB, 200 MB unpacked), once. To give an agent the skill, save the output of `semantic-mermaid skill` in its skills folder; for Claude Code:
-
-```bash
-mkdir -p ~/.claude/skills/semantic-mermaid && semantic-mermaid skill > ~/.claude/skills/semantic-mermaid/SKILL.md
-```
+`check` runs Mermaid's parser in Node and works right after `npm install`. `setup` downloads the headless browser that `render` draws in (about 95 MB, 200 MB unpacked), once.
 
 To use the layout in a web page, or the Node API, add the package to your project with `npm install semantic-mermaid mermaid`.
 
@@ -106,7 +110,7 @@ To use the layout in a web page, or the Node API, add the package to your projec
 
 With the skill installed, the agent's loop stays close to writing plain Mermaid: write the flowchart, add a directive for everything it means, check once, and deliver. A check takes about 0.1 s and prints `ok` or the exact fix. A wrong directive cannot break the diagram, because the lines are comments, and the agent never opens an image to inspect it.
 
-What the agent delivers depends on where the diagram will be read. A page that runs Semantic Mermaid draws the Mermaid text itself. GitHub, GitLab and Notion draw Mermaid with their own layout and ignore the directives, so there the agent keeps the source in a `.mmd` file, renders it to an SVG beside it, and embeds the SVG as an image. In a chat or a terminal it renders a PNG and shares the file. The skill itself is [skill/SKILL.md](skill/SKILL.md).
+What the agent delivers depends on where the diagram will be read. A page that runs Semantic Mermaid draws the Mermaid text itself. GitHub, GitLab and Notion draw Mermaid with their own layout and ignore the directives, so there the agent keeps the source in a `.mmd` file, renders it to an SVG beside it, and embeds the SVG as an image. In a chat or a terminal it renders a PNG and shares the file. The skill itself is [skills/semantic-mermaid/SKILL.md](skills/semantic-mermaid/SKILL.md).
 
 ### From the command line
 

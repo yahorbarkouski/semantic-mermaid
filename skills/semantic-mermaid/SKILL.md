@@ -1,6 +1,8 @@
 ---
 name: semantic-mermaid
-description: Write flowcharts that lay out well. Use when drawing or editing a Mermaid flowchart (process, workflow, decision tree, pipeline, architecture) for docs, READMEs, pull requests or chat: add Semantic Mermaid directives that state what the diagram means.
+description: "Write flowcharts that lay out well. Use when drawing or editing a Mermaid flowchart (process, workflow, decision tree, pipeline, architecture) for docs, READMEs, pull requests or chat: add Semantic Mermaid directives that state what the diagram means."
+license: MIT
+compatibility: Checking and rendering use the semantic-mermaid CLI from npm, which needs Node 20.6 or later.
 ---
 
 # Semantic Mermaid
@@ -20,6 +22,8 @@ You know what the diagram means when you write it. State all of it, and the engi
    - A chat or a terminal: run `semantic-mermaid render name.mmd -o name.png` and share the PNG, with the Mermaid source if the user may want to change it.
 
    There is no need to open the image yourself. If `render` says the browser is not installed, run `semantic-mermaid setup` once.
+
+The CLI is the npm package `semantic-mermaid`. If the `semantic-mermaid` command is missing, ask the user whether to install it with `npm install -g semantic-mermaid`.
 
 ## Directives
 
