@@ -6,7 +6,7 @@ export { detectType, PeleError };
 
 /** @typedef {import('pele').RenderOptions} RenderOptions */
 /** @typedef {{ id: string, label?: string, shape: string, parentId?: string, isGroup: boolean, cssStyles: string[], cssCompiledStyles: string[], cssClasses: string }} FlowNode */
-/** @typedef {{ id: string, start: string, end: string, label: string, pattern?: string, thickness?: string, style: string[], cssCompiledStyles: string[] }} FlowEdge */
+/** @typedef {{ id: string, start: string, end: string, label: string, curve?: string, pattern?: string, thickness?: string, style: string[], cssCompiledStyles: string[] }} FlowEdge */
 /** @typedef {{ nodes: FlowNode[], edges: FlowEdge[] }} FlowGraph */
 /** @typedef {{ w: number, h: number, parent: number, isGroup: boolean, dir?: string, padX: number, padTop: number, padBottom: number, minW: number, x: number, y: number }} MeasuredNode */
 /** @typedef {{ src: number, dst: number, minlen: number, labelW: number, labelH: number, route: number[], labelX: number, labelY: number }} MeasuredEdge */

@@ -259,3 +259,42 @@ test('author node IDs cannot collide with internal graph, edge or rank IDs', asy
   assert.equal((out.svg.match(/class="pele-node /g) ?? []).length, 3);
   assert.deepEqual(out.report.diagnostics, []);
 });
+
+test('bounded default rounding preserves explicit global, source and edge curve choices', async () => {
+  const source = fs.readFileSync(new URL('./fixtures/publishing.mmd', import.meta.url), 'utf8');
+  const paths = (svg) => [...svg.matchAll(/<g class="pele-edge" data-id="([^"]*)"[^>]*><path d="([^"]*)"/g)].map((m) => [m[1], m[2]]);
+  const ordinary = paths((await render(source)).svg);
+  assert.ok(ordinary.length > 0);
+  assert.deepEqual(ordinary, paths((await render(source, { config: { flowchart: { curve: 'step' } } })).svg));
+  const linear = paths((await render(source, { config: { flowchart: { curve: 'linear' } } })).svg);
+  assert.ok(linear.every(([, d]) => !/[QC]/.test(d)));
+  assert.notDeepEqual(ordinary, linear);
+  const smooth = paths((await render(`%%{init: {"flowchart":{"curve":"basis"}}}%%\n${source}`)).svg);
+  assert.notDeepEqual(ordinary, smooth, 'source curve overrides bounded default');
+  const edgeSource = source.replace('B -->|no| E', 'B revise@-->|no| E') + '\n revise@{ curve: basis }';
+  const perEdge = paths((await render(edgeSource, { config: { flowchart: { curve: 'linear' } } })).svg);
+  assert.ok(/[QC]/.test(perEdge.find(([id]) => id === 'revise')[1]), 'edge curve overrides global curve');
+  assert.ok(perEdge.filter(([id]) => id !== 'revise').every(([, d]) => !/[QC]/.test(d)));
+});
+
+test('a candidate that attempts a straight main path still reports a remaining bend', async () => {
+  const source = fs.readFileSync(new URL('./fixtures/publishing.mmd', import.meta.url), 'utf8');
+  const out = await render(source, { candidate: 'semantic-no-ports', autoDirection: false });
+  assert.ok(out.report.layout.measurements.spine < 1);
+  assert.ok(out.report.layout.unapplied.includes('the chosen layout leaves a bend in the declared main path'));
+});
+
+test('long exit and reference arrows retain their requested span beside a reserved decision', async () => {
+  for (const direction of ['TD', 'LR', 'BT', 'RL']) for (const reference of [false, true]) {
+    const distances = [];
+    for (const long of [false, true]) {
+      const exit = `B ${!reference && long ? '------>' : '-->'}|reject| X`;
+      const side = `R ${reference && long ? '-....->' : '-.->'} B`;
+      const source = `flowchart ${direction}\n A-->B{Question?}\n B-->|yes|C\n C-->D\n ${exit}\n ${side}\n %% @main A B C D\n %% @exit B -> X\n %% @side R`;
+      const out = await render(source, { candidate: 'semantic', autoDirection: false });
+      const a = center(out.svg, 'B'), b = center(out.svg, reference ? 'R' : 'X');
+      distances.push(Math.hypot(a.x - b.x, a.y - b.y));
+    }
+    assert.ok(distances[1] > distances[0] + 20, `${direction}, reference=${reference}: ${distances}`);
+  }
+});

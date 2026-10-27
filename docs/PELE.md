@@ -39,6 +39,8 @@ Pele's render options are accepted alongside `colors`, `candidate` and `apply`. 
 
 Role styles use CSS variables, so changing a host's Pele theme recolors the same SVG. Starts, decisions, ends and the declared main path use `--pele-accent`; exits use `--pele-critical`; side boxes have dashed outlines. Override `--semantic-main`, `--semantic-exit` or `--semantic-retry` to change a role's stroke color. Node fills use `--pele-surface`, and label colors remain Pele's. Author `style`, `classDef`, default classes and `linkStyle` take precedence. `colors: false` or `%% @colors off` keeps Pele's colors.
 
+Semantic flowcharts default to `step` curves with small rounded corners. This keeps the painted arrows close to the routes used for collision checks and label placement. Explicit global, source and per-edge curve settings take precedence.
+
 Pele's shapes and label measurements differ from Mermaid's, so positions and the selected candidate can differ too. Pele's native parser compatibility is described in its [compatibility guide](https://pele.run/compatibility).
 
 ## Use the CLI

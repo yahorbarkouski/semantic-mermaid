@@ -56,7 +56,7 @@ export function toElk(graph, measured) {
     // Pele reserves loop space in the node measurement and paints loops itself.
     if (e.src === e.dst) return;
     root.edges.push({
-      id: graph.edges[i].id,
+      id: graph.edges[i].id, minlen: e.minlen,
       sources: [graph.nodes[e.src].id], targets: [graph.nodes[e.dst].id],
       labels: e.labelW ? [{ text: graph.edges[i].label, width: e.labelW, height: e.labelH }] : [],
     });

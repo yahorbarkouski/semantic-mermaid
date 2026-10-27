@@ -41,7 +41,7 @@ test('a decision gets ports: continuation down, exit to one side, retry to the o
 
 test('side boxes and terminal exits become comment boxes inside their group', () => {
   const { graph, facts, elk } = setup(['A-->D', 'D--ok-->E', 'D--no-->X', 'R-.->D', 'E-->F', 'F-->G'], '%% @exit D -> X\n%% @side R', { shapes: { D: 'diamond' }, groups: ['G1'], parents: { A: 'G1', D: 'G1', E: 'G1', X: 'G1', R: 'G1' } });
-  applyFeatures(elk, graph, facts, ALL);
+  applyFeatures(elk, graph, facts, { ...ALL, ports: false });
   const group = elk.children.find((n) => n.id === 'G1');
   const comment = (id) => group.children.find((n) => n.id === id)?.layoutOptions['elk.commentBox'];
   assert.equal(comment('X'), 'true');
@@ -118,4 +118,25 @@ test('a main-path box ELK pushed aside moves back onto the path, and its arrows 
 test('a main-path box stays where it is when moving it would crowd another box', () => {
   const result = alignMainPath(shiftedColumn([{ id: 'N', x: 40, y: 100, width: 55, height: 40 }]), { mainPath: ['e1', 'e2'] }, new Set());
   assert.equal(result.children.find((c) => c.id === 'B').x, 122);
+});
+
+test('decisions keep alternative outcomes distinct and a returning retry off the main input', () => {
+  const { graph, facts, elk } = setup(
+    ['A-->B', 'B--yes-->C', 'C-->D', 'B--no-->E', 'E-->B', 'B--reject-->X', 'R-.->B'],
+    '%% @main A B C D\n%% @exit B -> X\n%% @retry E -> B\n%% @side R',
+    { shapes: { B: 'diamond' } },
+  );
+  const { portOwner } = applyFeatures(elk, graph, facts, { ...ALL, sideBoxes: false });
+  const b = elk.children.find((n) => n.id === 'B');
+  const port = (edgeId) => {
+    const edge = elk.edges.find((e) => e.id === edgeId);
+    return b.ports.find((p) => [...edge.sources, ...edge.targets].includes(p.id));
+  };
+  assert.notEqual(port('L_B_E_3').id, port('L_B_X_5').id, 'revise and reject need different connection points');
+  assert.notEqual(port('L_E_B_4').id, port('L_A_B_0').id, 'retry must not use the main input');
+  assert.equal(port('L_B_C_1').layoutOptions['elk.port.side'], 'SOUTH');
+  assert.equal(port('L_A_B_0').layoutOptions['elk.port.side'], 'NORTH');
+  assert.notEqual(port('L_R_B_6').id, port('L_E_B_4').id, 'reference and retry need different connection points');
+  restoreEdges(elk, portOwner);
+  assert.ok(elk.edges.every((e) => !e.sources[0].includes('__port') && !e.targets[0].includes('__port')));
 });

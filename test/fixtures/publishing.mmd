@@ -1,0 +1,12 @@
+flowchart TD
+  A([Write draft]) --> B{Review passed?}
+  B -->|yes| C[Publish] --> D([Live])
+  B -->|no| E[Revise]
+  E --> B
+  B -->|reject| X[Archive]
+  R[(Style guide)] -.-> B
+
+  %% @main A B C D
+  %% @exit B -> X
+  %% @retry E -> B
+  %% @side R

@@ -36,6 +36,8 @@ function prepareDiagram(source, options) {
       let id = `__semantic_edge_${i}`;
       while (ids.has(id)) id += '_';
       ids.add(id);
+      // Bound corner rounding so the painted path stays close to the route the scorer checked.
+      e.curve ??= 'step';
       return { ...e, id };
     }) };
     if (!context) {
