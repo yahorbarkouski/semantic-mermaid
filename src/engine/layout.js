@@ -76,6 +76,7 @@ export function candidates(facts, base) {
     ...(base.direction === 'DOWN' || base.direction === 'RIGHT' ? lanes : []),
     { name: 'semantic', features: semantic },
     { name: 'semantic+bus', features: { ...semantic, merge: true } },
+    ...(facts.loops.size && facts.sideBoxes.size ? [{ name: 'semantic-mirrored-branches', features: { ...semantic, mirrorBranches: true } }] : []),
     ...((base.skipped ?? 0) > SIMPLEX_LIMIT ? [] : [{ name: 'semantic-simplex', features: { ...semantic, simplex: true } }]),
   ];
   if (facts.continuation.size) list.push({ name: 'semantic-no-ports', features: { ...semantic, ports: false } });
@@ -231,8 +232,8 @@ function unapplied(candidate, m, facts, lanesRan) {
   const notes = [];
   if (candidate.lanes) return notes;
   if (lanesRan) notes.push('the declared lanes are drawn as ordinary groups: the lane layout scored worse (lanes suit parties that hand work back and forth, not stages a process passes once)');
-  if (facts.mainSource === 'declared' && facts.mainPath.length && !candidate.features.spine && (m.spine ?? 1) < 1) {
-    notes.push('the declared main path is coloured but not drawn straight: the layouts that straighten it scored worse');
+  if (facts.mainSource === 'declared' && facts.mainPath.length && (m.spine ?? 1) < 1) {
+    notes.push('the chosen layout leaves a bend in the declared main path');
   }
   if (m.peerDisorder > 0) {
     notes.push(`declared peers are out of order in ${m.peerDisorder} place${m.peerDisorder > 1 ? 's' : ''}: the layouts that keep the order scored worse`);

@@ -6,6 +6,7 @@
 // for layout (Mermaid swaps them back when drawing).
 
 import { mergeSideGroups, splitSideGroups } from './side-groups.js';
+import { mergeSideBoxes, splitSideBoxes } from './side-boxes.js';
 import { MOST_BESIDE, SIDE_LABEL } from '../facts/resolve.js';
 
 /** @typedef {import('../model/graph.js').Graph} Graph */
@@ -23,6 +24,7 @@ import { MOST_BESIDE, SIDE_LABEL } from '../facts/resolve.js';
  *                                retries from the side vertices
  * @property {boolean} merge      arrows leaving one box share a trunk (a bus)
  * @property {boolean} peerOrder  keep declared peers in their declared order
+ * @property {boolean} [mirrorBranches] try the other side for alternatives without a declared exit
  * @property {boolean} [simplex]  network-simplex node placement, which honours the main path's
  *                                straightness priority (Brandes-Köpf, ELK's default, mostly does not)
  * @property {string | null} direction  ELK direction to use instead of Mermaid's (DOWN, RIGHT)
@@ -50,6 +52,7 @@ export const drawnEnds = (e) => (e.layoutReversed ? [e.targets[0], e.sources[0]]
  * @typedef {object} Applied  what applyFeatures changed and must be undone after layout
  * @property {Map<string, string>} portOwner  port id -> box id
  * @property {Merge[]} merges                 steps merged with their side groups
+ * @property {import('./side-boxes.js').Beside[]} sideBoxes
  */
 
 /**
@@ -67,15 +70,16 @@ export function applyFeatures(root, graph, facts, features, inner = new Map()) {
   const portOwner = new Map();
   if (features.direction) root.layoutOptions['elk.direction'] = features.direction;
   if (features.simplex) root.layoutOptions['elk.layered.nodePlacement.strategy'] = 'NETWORK_SIMPLEX';
+  if (features.peerOrder) orderPeers(root, index, facts);
   if (features.loops) reverseLoops(root, facts);
   if (features.spine) straightenMainPath(root, facts);
   const merges = features.sideGroups ? mergeSideGroups(root, index, facts, inner, portOwner) : [];
   const merged = new Set(merges.map((m) => m.step.id));
   if (features.sideBoxes) placeSideBoxes(root, index, graph, facts, merged);
-  if (features.ports) decisionPorts(root, index, facts, portOwner, merged);
+  if (features.ports) decisionPorts(root, index, facts, portOwner, merged, features.mirrorBranches);
+  const sideBoxes = features.sideBoxes && features.ports ? mergeSideBoxes(root, index, portOwner, merged) : [];
   if (features.merge) mergeFanOuts(root, index, graph, facts, portOwner);
-  if (features.peerOrder) orderPeers(root, index, facts);
-  return { portOwner, merges };
+  return { portOwner, merges, sideBoxes };
 }
 
 /**
@@ -86,6 +90,7 @@ export function applyFeatures(root, graph, facts, features, inner = new Map()) {
 export function undoFeatures(result, applied) {
   restoreEdges(result, applied.portOwner);
   splitSideGroups(result, applied.merges, absoluteFrames);
+  splitSideBoxes(result, applied.sideBoxes, absoluteFrames);
   return result;
 }
 
@@ -166,7 +171,7 @@ function placeSideBoxes(root, index, graph, facts, merged) {
     const partnerNode = index.nodes.get(partner);
     if (!partnerNode || merged.has(partner) || partnerNode.children?.length || index.parentOf.get(partner) !== index.parentOf.get(id)) continue;
     const label = edgeLabel.get(e.id) ?? '';
-    if (label.length > SIDE_LABEL) continue;
+    if (label.length > SIDE_LABEL || (e.minlen ?? 1) > 1) continue;
     const n = (perPartner.get(partner) ?? 0) + 1;
     if (n > MOST_BESIDE) continue;
     perPartner.set(partner, n);
@@ -189,16 +194,14 @@ const SIDES = {
 };
 
 /**
- * A decision with a known continuation gets fixed ports at its vertices: the continuation leaves
- * from the vertex facing the flow, exits and other branches from one side vertex, and every arrow
- * arrives at the opposite vertex. A branch whose target is a declared peer of the continuation's
- * target (or of another branch's target) leaves from the side that peer order puts it on; other
- * branches alternate sides. A retry leaves from the side its target sits on, or from the side away
- * from the branches when its target is on the main path. A side box comes in at a free side corner.
+ * Keep a decision's continuation and main input on the flow-facing vertices. Reserve opposite
+ * sides for exits and alternatives, with distinct face positions for references and retries
+ * sharing a side. Retry arrivals follow the side of their branch rather than the main input.
+ * Declared peer order determines the side of ordinary alternatives when available.
  */
-function decisionPorts(root, index, facts, portOwner, merged) {
+function decisionPorts(root, index, facts, portOwner, merged, mirrorBranches = false) {
   const sides = SIDES[root.layoutOptions['elk.direction'] ?? 'DOWN'] ?? SIDES.DOWN;
-  const at = (n, side) => ({ NORTH: [n.width / 2, 0], SOUTH: [n.width / 2, n.height], EAST: [n.width, n.height / 2], WEST: [0, n.height / 2] })[side];
+  const at = (n, side, fraction) => ({ NORTH: [n.width * fraction, 0], SOUTH: [n.width * fraction, n.height], EAST: [n.width, n.height * fraction], WEST: [0, n.height * fraction] })[side];
   const target = (/** @type {any} */ e) => drawnEnds(e)[1];
   /** @type {{ id: string, touching: any[], side: Map<string, string>, retries: any[] }[]} */
   const decisions = [];
@@ -220,7 +223,10 @@ function decisionPorts(root, index, facts, portOwner, merged) {
       if (!other) return null;
       return list.indexOf(x) < list.indexOf(other) ? sides.second : sides.first;
     };
-    let next = sides.first;
+    // Reserve the terminal-outcome side before assigning ordinary alternatives. Their source
+    // order must not make an alternative steal the exit's connection point.
+    const exitSide = leaving.some((e) => facts.edgeRoles.get(e.id) === 'exit') ? sides.first : null;
+    let next = exitSide || mirrorBranches ? sides.second : sides.first;
     const retries = [];
     for (const e of leaving) {
       if (e.id === continuation) continue;
@@ -251,29 +257,53 @@ function decisionPorts(root, index, facts, portOwner, merged) {
       }
     }
   }
-  for (const { id, touching, side, retries } of decisions) {
+  // Decide all roles before changing endpoint ids: another decision may own the other end.
+  const plans = decisions.map(({ id, touching, side, retries }) => {
     for (const e of retries) side.set(e.id, offSide.get(target(e)) ?? sides.second);
+    const exitSides = new Set(touching.filter((e) => facts.edgeRoles.get(e.id) === 'exit' && drawnEnds(e)[0] === id).map((e) => side.get(e.id)));
+    const referenceSide = [sides.second, sides.first].find((s) => !exitSides.has(s)) ?? sides.second;
+    const connections = touching.map((e) => {
+      const [from, to] = drawnEnds(e);
+      const returns = to === id && facts.loops.has(e.id);
+      const reference = to === id && facts.sideBoxes.has(from);
+      const s = side.get(e.id) ?? (returns ? offSide.get(from) ?? sides.second : reference ? referenceSide : sides.arrive);
+      const central = reference || (from === id && facts.edgeRoles.get(e.id) === 'exit') || s === sides.arrive || s === sides.flow;
+      return { e, side: s, central, before: from === id && facts.loops.has(e.id), returns, fraction: 0.5 };
+    });
+    for (const s of [sides.first, sides.second]) {
+      const sharing = connections.filter((c) => c.side === s);
+      if (sharing.length < 2) continue;
+      // Keep exits and references on the side tip. Branches and returning retries use distinct
+      // points on the flow-facing half; an outgoing retry uses the half facing earlier steps.
+      // A return sits closer to the side tip than the branch that leads to its source.
+      for (const before of [true, false]) {
+        const shifted = sharing.filter((c) => !c.central && c.before === before).sort((a, b) => Number(b.returns) - Number(a.returns));
+        shifted.forEach((c, i) => {
+          const logical = !sharing.some((c) => c.central) && shifted.length === sharing.length
+            ? (i + 1) / (shifted.length + 1)
+            : 0.5 + (before ? -1 : 1) * 0.5 * (i + 1) / (shifted.length + 1);
+          c.fraction = sides.flow === 'SOUTH' || sides.flow === 'EAST' ? logical : 1 - logical;
+        });
+      }
+    }
+    return { id, connections };
+  });
+  for (const { id, connections } of plans) {
     const node = index.nodes.get(id);
     node.ports = [];
     node.layoutOptions = { ...(node.layoutOptions ?? {}), 'elk.portConstraints': 'FIXED_POS' };
-    const port = (s) => {
-      const pid = `${id}__port_${s}`;
+    const port = (s, fraction) => {
+      const pid = `${id}__port_${s}${fraction === 0.5 ? '' : `_${Math.round(fraction * 1000)}`}`;
       if (!portOwner.has(pid)) {
-        const [x, y] = at(node, s);
+        const [x, y] = at(node, s, fraction);
         node.ports.push({ id: pid, x, y, width: 0, height: 0, layoutOptions: { 'elk.port.side': s } });
         portOwner.set(pid, id);
       }
       return pid;
     };
-    // a side box feeding the decision comes in at a side corner no arrow leaves from, so it can sit
-    // beside the decision instead of above it
-    const sending = new Set([...side.values()]);
-    const free = [sides.second, sides.first].find((s) => !sending.has(s));
-    for (const e of touching) {
-      const fromSide = e.targets[0] === id && facts.sideBoxes.has(drawnEnds(e)[0]);
-      const s = side.get(e.id) ?? (fromSide && free ? free : sides.arrive);
-      if (e.sources[0] === id) e.sources = [port(s)];
-      else e.targets = [port(s)];
+    for (const { e, side, fraction } of connections) {
+      if (e.sources[0] === id) e.sources = [port(side, fraction)];
+      else e.targets = [port(side, fraction)];
     }
   }
 }

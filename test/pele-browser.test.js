@@ -50,7 +50,7 @@ async function draw(source, options = {}) {
       const path = edge.querySelector('path');
       if (!path || !Number.isFinite(path.getTotalLength()) || path.getTotalLength() <= 0) errors.push(`edge ${edge.dataset.id} has no route`);
     }
-    return { errors, nodes: leaves.length, width: out.width, height: out.height, chosen: out.report?.layout?.chosen, svg: out.svg };
+    return { errors, nodes: leaves.length, width: out.width, height: out.height, chosen: out.report?.layout?.chosen, measurements: out.report?.layout?.measurements, tried: out.report?.layout?.tried, svg: out.svg };
   }, { source, options });
 }
 
@@ -137,5 +137,87 @@ test('long group titles stay inside their frames in every direction', async () =
     });
     assert.ok(bounds.left >= 0 && bounds.right >= 0, `${dir}: ${JSON.stringify(bounds)}`);
     assert.ok(bounds.height < bounds.width, `${dir}: group grew in wrong axis`);
+  }
+});
+
+test('publishing keeps its declared spine and routes each decision outcome separately', async () => {
+  const source = await fs.readFile('test/fixtures/publishing.mmd', 'utf8');
+  for (const direction of ['TD', 'LR', 'BT', 'RL']) {
+    const out = await draw(source.replace('flowchart TD', `flowchart ${direction}`), { autoDirection: false });
+    assert.deepEqual(out.errors, [], direction);
+    const placed = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('g.pele-node')].map((node) => {
+      const m = node.transform.baseVal.consolidate().matrix;
+      return [node.dataset.id, { x: m.e, y: m.f }];
+    })));
+    const across = direction === 'TD' || direction === 'BT' ? 'x' : 'y';
+    const along = across === 'x' ? 'y' : 'x';
+    for (const id of ['B', 'C', 'D']) assert.ok(Math.abs(placed[id][across] - placed.A[across]) < 1, `${direction}: ${id} left the declared spine`);
+    assert.ok(Math.abs(placed.X[along] - placed.B[along]) < 1, `${direction}: rejection must stay beside its decision`);
+    assert.ok(Math.abs(placed.R[along] - placed.B[along]) < 1, `${direction}: reference must stay beside its decision`);
+  }
+});
+
+test('the default Pele curve keeps an adjacent outcome label clear of its own arrow', async () => {
+  // Force the old compact route: bounded rounding must protect labels even when port
+  // reservations are disabled by a candidate or the selected layout has tight corners.
+  await draw(await fs.readFile('test/fixtures/publishing.mmd', 'utf8'), { candidate: 'semantic-no-ports' });
+  const intrusion = await page.evaluate(() => {
+    const label = [...document.querySelectorAll('g.pele-edge-label')].find((node) => node.textContent === 'no');
+    const rect = label.querySelector('rect').getBBox();
+    const edge = [...document.querySelectorAll('g.pele-edge')].find((node) => node.dataset.id === label.dataset.id).querySelector('path');
+    for (let d = 0, length = edge.getTotalLength(); d < length; d += 0.5) {
+      const p = edge.getPointAtLength(d);
+      if (p.x > rect.x + 0.5 && p.x < rect.x + rect.width - 0.5 && p.y > rect.y + 0.5 && p.y < rect.y + rect.height - 0.5) return true;
+    }
+    return false;
+  });
+  assert.equal(intrusion, false, 'curving the arrow must not sweep it into an adjacent label background');
+});
+
+test('decision routes remain bounded with long text, larger fonts and nested groups', async () => {
+  const publishing = await fs.readFile('test/fixtures/publishing.mmd', 'utf8');
+  const cases = [
+    ['long decision', publishing.replace('Review passed?', 'Did the editorial and legal reviews both pass?'), {}],
+    ['wide retry box', publishing.replace('[Revise]', '[Rewrite and request another review]'), {}],
+    ['large text', publishing, { fontSize: 24 }],
+    ['two references', publishing.replace('%% @side R', 'S[(Editorial policy)] -.-> B\n %% @side R S'), {}],
+    ['nested boundary', `flowchart TD
+ A([Write draft]) --> B
+ subgraph Outer[Publishing]
+   subgraph Inner[Review]
+     B{Review passed?} -->|reject| X[Archive]
+     R[(Style guide)] -.-> B
+   end
+   B -->|yes| C[Publish]
+   B -->|no| E[Revise]
+   E --> B
+ end
+ C --> D([Live])
+ %% @main A B C D
+ %% @exit B -> X
+ %% @retry E -> B
+ %% @side R`, {}],
+  ];
+  for (const [name, source, options] of cases) for (const direction of ['TD', 'LR', 'BT', 'RL']) {
+    const out = await draw(source.replace('flowchart TD', `flowchart ${direction}`), { ...options, autoDirection: false });
+    assert.deepEqual(out.errors, [], `${name}, ${direction}`);
+    assert.equal(out.measurements.throughBoxes, 0, `${name}, ${direction}: arrow passes through a node`);
+    assert.ok(out.tried.every((t) => !t.error), `${name}, ${direction}: candidate failed`);
+  }
+});
+
+test('parallel retries preserve straight main paths across adjacent decisions', async () => {
+  const examples = [
+    ['bug-triage', ['Report', 'Repro', 'Severity', 'Hotfix', 'Verify', 'Close']],
+    ['file-upload', ['Pick', 'Size', 'Scan', 'Upload', 'Done']],
+    ['order', ['A', 'B', 'C', 'D', 'E', 'F']],
+  ];
+  for (const [name, main] of examples) {
+    const out = await draw(await fs.readFile(`examples/${name}.mmd`, 'utf8'), { maxWidth: 800 });
+    assert.deepEqual(out.errors, [], name);
+    assert.equal(out.measurements.spine, 1, name);
+    for (const key of ['crossings', 'crowdedEnds', 'throughBoxes']) assert.equal(out.measurements[key], 0, `${name}: ${key}`);
+    const xs = await page.evaluate((ids) => ids.map((id) => document.querySelector(`g.pele-node[data-id="${id}"]`).transform.baseVal.consolidate().matrix.e), main);
+    assert.ok(Math.max(...xs) - Math.min(...xs) < 1, `${name}: visible main path shifts sideways`);
   }
 });

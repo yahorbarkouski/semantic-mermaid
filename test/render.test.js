@@ -113,3 +113,11 @@ test('declared lanes are drawn as lanes of one length, which plain ELK cannot do
   for (let i = 1; i < frames.length; i++) assert.ok(frames[i].x >= frames[i - 1].x + frames[i - 1].w, 'side by side, in declared order');
   assert.ok(frames.every((f) => Math.abs(f.y - frames[0].y) < 0.5 && Math.abs(f.h - frames[0].h) < 0.5), 'one length');
 });
+
+test('publishing keeps its main path straight with Mermaid as well as Pele', async () => {
+  const source = fs.readFileSync(new URL('./fixtures/publishing.mmd', import.meta.url), 'utf8');
+  const { report } = await renderer.render(source);
+  assert.equal(report.layout.measurements.spine, 1);
+  for (const key of ['crossings', 'throughBoxes', 'crowdedEnds']) assert.equal(report.layout.measurements[key], 0, key);
+  assert.ok(report.layout.tried.every((t) => !t.error));
+});
