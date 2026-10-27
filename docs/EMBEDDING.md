@@ -1,5 +1,7 @@
 # Render Semantic Mermaid in your app
 
+For Pele, use the separate `semantic-mermaid/pele` entry point. It renders SVG without a browser and keeps Pele's shapes and themes; see [Render with Pele](PELE.md). The `install(mermaid)` API below is for Mermaid.js.
+
 This guide is for teams whose app already draws Mermaid diagrams in the browser, such as the diagrams in an assistant's replies. Adding Semantic Mermaid is one call before the first render:
 
 ```js

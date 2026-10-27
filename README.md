@@ -12,7 +12,7 @@ We tested Semantic Mermaid on 236 flowcharts, then blindly judged it against the
 
 *The same source ([examples/expense.mmd](examples/expense.mmd)) drawn by Mermaid's ELK layout (left) and by Semantic Mermaid (right). Mermaid's own* `swimlane-beta` *diagram draws lanes too; [Compared with Mermaid's swimlanes](#compared-with-mermaids-swimlanes) shows how the two differ.*
 
-**Contents:** [How the extension looks like](#how-the-extension-looks-like) · [Directives](#directives) · [Auto-sized for the page](#auto-sized-for-the-page) · [Get started](#get-started) · [More examples](#more-examples) · [Compared with Mermaid's swimlanes](#compared-with-mermaids-swimlanes) · [How it works](#how-it-works) · [How we tested](#how-we-tested) · [Limits](#limits) · [Development](#development)
+**Contents:** [How the extension looks like](#how-the-extension-looks-like) · [Directives](#directives) · [Auto-sized for the page](#auto-sized-for-the-page) · [Get started](#get-started) · [Render with Pele](#render-with-pele) · [More examples](#more-examples) · [Compared with Mermaid's swimlanes](#compared-with-mermaids-swimlanes) · [How it works](#how-it-works) · [How we tested](#how-we-tested) · [Limits](#limits) · [Development](#development)
 
 ## How the extension looks like
 
@@ -93,6 +93,17 @@ npm install -g semantic-mermaid && semantic-mermaid setup
 ```
 
 Start a new agent session so it picks up the skill, then ask for a diagram, such as "add a flowchart of our checkout to the README". From then on your agent writes the directives, checks them, and delivers each diagram in a form its reader can see, such as an SVG embedded in a GitHub README, since GitHub draws Mermaid with its own layout. The skill, [skills/semantic-mermaid/SKILL.md](skills/semantic-mermaid/SKILL.md), tells it how. To run the CLI yourself, see [docs/CLI.md](docs/CLI.md); to draw Semantic Mermaid in your own app, see [docs/EMBEDDING.md](docs/EMBEDDING.md).
+
+## Render with Pele
+
+Semantic Mermaid also supports [Pele](https://github.com/obsidianmd/pele). The Pele backend uses the same semantic layout engine and renders SVG without a browser:
+
+```js
+import { render } from 'semantic-mermaid/pele';
+const { svg, report } = await render(source, { maxWidth: 800 });
+```
+
+For the CLI, use `semantic-mermaid render order.mmd --renderer pele -o order.svg`. The [Pele guide](docs/PELE.md) covers integration, theming and compatibility. Semantic layout still runs ELK, so Pele's native speed claims do not apply to this path.
 
 ## More examples
 
@@ -192,4 +203,4 @@ npm run types        # write the type declarations into types/, as npm pack does
 
 ## License
 
-MIT. The vendored plugin in [vendor/layout-elk](vendor/layout-elk) is part of Mermaid and keeps Mermaid's MIT license.
+MIT. The vendored plugin in [vendor/layout-elk](vendor/layout-elk) is part of Mermaid and keeps Mermaid's MIT license. The private [Pele runtime](vendor/pele) keeps Pele's MIT license.

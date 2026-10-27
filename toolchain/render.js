@@ -3,7 +3,6 @@
 //   const renderer = await createRenderer();
 //   const { svg, png, report } = await renderer.render(source, { png: true });
 //   await renderer.close();
-import { openRenderer } from './browser.js';
 
 /** @typedef {import('../src/mermaid/loader.js').Report} Report */
 
@@ -33,9 +32,15 @@ export const PAGE_WIDTH = 800;
 
 /**
  * A reusable renderer. Renders run one at a time per page; `pages` sets the parallelism.
- * @param {{ pages?: number }} [options]
+ * @param {{ pages?: number, renderer?: 'mermaid' | 'pele' }} [options]
  */
-export async function createRenderer({ pages = 1 } = {}) {
+export async function createRenderer({ pages = 1, renderer: backend = 'mermaid' } = {}) {
+  if (backend === 'pele') {
+    const { createPeleRenderer } = await import('./pele.js');
+    return createPeleRenderer();
+  }
+  if (backend !== 'mermaid') throw new Error('renderer must be "mermaid" or "pele"');
+  const { openRenderer } = await import('./browser.js');
   const renderer = await openRenderer({ pages });
   const idle = [...renderer.pages];
   /** @type {((page: any) => void)[]} */

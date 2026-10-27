@@ -31,6 +31,7 @@ jobs:
       - run: npx playwright install-deps chromium
       - run: node toolchain/cli.js setup
       - run: npm run check-types
+      - run: node scripts/vendor-pele.js --check
       - run: npm test
       - name: the packed package installs and runs
         run: |
@@ -44,3 +45,9 @@ jobs:
             %% @main A B
           MMD
           semantic-mermaid source "$RUNNER_TEMP/check.svg"
+          semantic-mermaid render - --renderer pele -o "$RUNNER_TEMP/pele-check.svg" <<'MMD'
+          flowchart TD
+            A --> B
+            %% @main A B
+          MMD
+          semantic-mermaid source "$RUNNER_TEMP/pele-check.svg"

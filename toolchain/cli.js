@@ -27,8 +27,8 @@ import { withSource, sourceOf, compactPaths } from './source.js';
 const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
 const USAGE = `usage:
-  semantic-mermaid check <file.mmd|-> [--verbose] [--json]
-  semantic-mermaid render <file.mmd|-> [-o out.svg|out.png ...] [--page-width 800 | --no-fit] [--elk] [--no-colors] [--verbose] [--json]
+  semantic-mermaid check <file.mmd|-> [--renderer mermaid|pele] [--verbose] [--json]
+  semantic-mermaid render <file.mmd|-> [-o out.svg|out.png ...] [--renderer mermaid|pele] [--page-width 800 | --no-fit] [--elk] [--no-colors] [--verbose] [--json]
   semantic-mermaid setup    download the headless browser that render uses (once, about 95 MB)
   semantic-mermaid source <file.svg>   print the diagram an SVG from render was drawn from
   semantic-mermaid --version`;
@@ -82,6 +82,7 @@ async function main() {
         'no-fit': { type: 'boolean', default: false },
         'page-width': { type: 'string' },
         candidate: { type: 'string' },
+        renderer: { type: 'string', default: 'mermaid' },
         json: { type: 'boolean', default: false },
         verbose: { type: 'boolean', short: 'v', default: false },
         help: { type: 'boolean', short: 'h', default: false },
@@ -105,7 +106,11 @@ async function main() {
     return command && !values.help ? 2 : 0;
   }
   // Mermaid is a peer dependency, which some installers (yarn 1, --legacy-peer-deps) leave out
-  try {
+  if (values.renderer !== 'mermaid' && values.renderer !== 'pele') {
+    console.error('--renderer must be mermaid or pele');
+    return 2;
+  }
+  if (values.renderer === 'mermaid') try {
     createRequire(import.meta.url).resolve('mermaid');
   } catch {
     console.error('semantic-mermaid needs the mermaid package beside it: npm install -g mermaid');
@@ -125,9 +130,10 @@ async function main() {
   };
   const failed = (/** @type {unknown} */ error) => {
     const message = String(/** @type {Error} */ (error)?.message ?? error);
+    if (/Executable doesn't exist/.test(message)) return fail(browserProblem(error));
     // Mermaid's syntax errors read the same from check and render
     const parse = command === 'check' || /^(Parse|Lexical) error|No diagram type detected/.test(message);
-    return fail(`Mermaid could not ${parse ? 'parse' : 'render'} the diagram:\n  ${message}`);
+    return fail(`${values.renderer === 'pele' ? 'Pele' : 'Mermaid'} could not ${parse ? 'parse' : 'render'} the diagram:\n  ${message}`);
   };
   /** @param {import('./report.js').Report | null} report @param {object} [extra] */
   const finish = (report, extra = {}) => {
@@ -141,7 +147,7 @@ async function main() {
   if (command === 'check') {
     let report;
     try {
-      report = await checkDiagram(source);
+      report = values.renderer === 'pele' ? await (await import('../src/pele/index.js')).check(source) : await checkDiagram(source);
     } catch (error) {
       return failed(error);
     }
@@ -152,11 +158,12 @@ async function main() {
   const unknown = outs.find((o) => !/\.(svg|png)$/i.test(o));
   if (unknown) return fail(`-o ${unknown}: the file name must end in .svg or .png`, 2);
   const pageWidth = values['page-width'] === undefined ? undefined : Number(values['page-width']);
-  if (pageWidth !== undefined && !(pageWidth > 0)) return fail(`--page-width ${values['page-width']}: give the page's width in pixels, such as 800`, 2);
+  if (pageWidth !== undefined && (!Number.isFinite(pageWidth) || !(pageWidth > 0))) return fail(`--page-width ${values['page-width']}: give the page's width in pixels, such as 800`, 2);
+  if (values.elk && values.renderer === 'pele') return fail('--elk uses Mermaid; omit --renderer pele', 2);
   const { createRenderer } = await import('./render.js');
   let renderer;
   try {
-    renderer = await createRenderer();
+    renderer = await createRenderer({ renderer: values.renderer });
   } catch (error) {
     return fail(browserProblem(error));
   }
@@ -167,7 +174,7 @@ async function main() {
     } catch (error) {
       return failed(error);
     }
-    const report = rendered.report ?? (values.elk ? null : directivesIgnored(source));
+    const report = rendered.report ?? (values.elk ? null : values.renderer === 'pele' ? await (await import('../src/pele/index.js')).check(source) : directivesIgnored(source));
     // an image drawn while directives had errors would replace a good one with a wrong one
     const errors = report?.diagnostics.some((d) => d.severity === 'error');
     if (!errors) {
