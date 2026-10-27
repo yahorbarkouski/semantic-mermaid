@@ -1,6 +1,6 @@
 {
   "name": "semantic-mermaid",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Mermaid flowcharts laid out by what they mean: directives an agent writes in comments, a layout engine that reads them, and a CLI to check and render.",
   "keywords": [
     "mermaid",
@@ -40,7 +40,11 @@
       "types": "./types/toolchain/render.d.ts",
       "default": "./toolchain/render.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./pele": {
+      "types": "./types/src/pele/index.d.ts",
+      "default": "./src/pele/index.js"
+    }
   },
   "files": [
     "src",
@@ -55,7 +59,8 @@
     "prepack": "npm run types",
     "prepublishOnly": "npm run check-types && npm test",
     "images": "node scripts/readme-images.js",
-    "vendor": "node scripts/vendor-layout-elk.js"
+    "vendor": "node scripts/vendor-layout-elk.js",
+    "vendor:pele": "node scripts/vendor-pele.js"
   },
   "engines": {
     "node": ">=22.12"
@@ -64,12 +69,15 @@
     "mermaid": "^11.0.0 || ^12.0.0"
   },
   "dependencies": {
+    "elkjs": "0.9.3",
+    "pele": "1.12.0",
     "playwright": "^1.63.0"
   },
   "devDependencies": {
     "@mermaid-js/layout-elk": "1.0.1",
     "@types/node": "^22.20.5",
-    "typescript": "^5.9.0",
-    "mermaid": "12.1.0"
+    "esbuild": "0.28.2",
+    "mermaid": "12.1.0",
+    "typescript": "^5.9.0"
   }
 }

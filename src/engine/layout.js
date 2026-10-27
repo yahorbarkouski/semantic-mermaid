@@ -59,7 +59,7 @@ const READING = { UP: 'DOWN', LEFT: 'RIGHT' };
  * placement, without decision ports, forced peer order, loop reversal or side groups when those
  * exist, and the other direction for a strip or a bottom-up drawing.
  * @param {Facts} facts
- * @param {{ direction: string, aspect: number, skipped?: number, width?: number, pageWidth?: number }} base  plain ELK's direction, shape, width and how many layers its arrows skip, and the width of the page the drawing is for
+ * @param {{ direction: string, aspect: number, skipped?: number, width?: number, pageWidth?: number, preserveDirection?: boolean }} base  plain ELK's direction, shape, width and how many layers its arrows skip, and the width of the page the drawing is for
  * @returns {Candidate[]}
  */
 export function candidates(facts, base) {
@@ -89,6 +89,7 @@ export function candidates(facts, base) {
   // 7:1 over the tall columns that turning them produced, and preferred a turned 13:1 tree; and a
   // drawing its page would shrink below SMALLEST_ON_PAGE
   const turn = base.aspect > STRIP || tooWide(base.width ?? 0, base.pageWidth);
+  if (base.preserveDirection) return list;
   if (READING[base.direction]) directions.push(READING[base.direction]);
   else if (base.direction === 'RIGHT' && turn) directions.push('DOWN');
   else if (base.direction === 'DOWN' && turn) directions.push('RIGHT');
@@ -123,10 +124,10 @@ function ignoredCost(candidate, facts) {
  * Lay out Mermaid's ELK graph semantically.
  * @param {any} elkGraph the graph Mermaid built
  * @param {{ layout: (g: any) => Promise<any> }} elk  Mermaid's ELK instance
- * @param {{ graph: Graph, facts: Facts, force?: string, pageWidth?: number }} context  `force` names a candidate to use regardless of score (for inspection); `pageWidth` is the width of the page the drawing is for, when known
+ * @param {{ graph: Graph, facts: Facts, force?: string, pageWidth?: number, preserveDirection?: boolean }} context  `force` names a candidate to use regardless of score (for inspection); `pageWidth` is the width of the page the drawing is for, when known
  * @returns {Promise<{ result: any, choice: Choice }>} the laid-out graph for Mermaid, and why
  */
-export async function layoutSemantically(elkGraph, elk, { graph, facts, force, pageWidth }) {
+export async function layoutSemantically(elkGraph, elk, { graph, facts, force, pageWidth, preserveDirection }) {
   // candidates run on data-only copies of Mermaid's graph, which carries functions
   const inner = await layoutSideGroups(elkGraph, elk, facts);
   const corners = new Set([...graph.nodes.values()].filter((n) => DECISION_SHAPES.has(n.shape)).map((n) => n.id));
@@ -167,7 +168,7 @@ export async function layoutSemantically(elkGraph, elk, { graph, facts, force, p
 
   const base = await run({ name: 'elk', features: NONE });
   const direction = elkGraph.layoutOptions?.['elk.direction'] ?? 'DOWN';
-  const plan = candidates(facts, { direction, aspect: base.measurements.aspect, skipped: skippedLayers(base.result), width: base.result.width, pageWidth });
+  const plan = candidates(facts, { direction, aspect: base.measurements.aspect, skipped: skippedLayers(base.result), width: base.result.width, pageWidth, preserveDirection });
   const runs = [base];
   /** @type {{ name: string, error: string }[]} */
   const failed = [];
@@ -185,7 +186,7 @@ export async function layoutSemantically(elkGraph, elk, { graph, facts, force, p
   // a winner its page would shrink below SMALLEST_ON_PAGE is also tried turned, whatever plain ELK's width
   const first = rank()[0];
   const across = direction === 'RIGHT' ? 'DOWN' : direction === 'DOWN' ? 'RIGHT' : null;
-  if (across && !first.candidate.features.direction && tooWide(first.result.width ?? 0, pageWidth) && !runs.some((r) => r.candidate.features.direction === across && r.candidate.lanes === first.candidate.lanes && r.candidate.name.startsWith(first.candidate.name))) {
+  if (!preserveDirection && across && !first.candidate.features.direction && tooWide(first.result.width ?? 0, pageWidth) && !runs.some((r) => r.candidate.features.direction === across && r.candidate.lanes === first.candidate.lanes && r.candidate.name.startsWith(first.candidate.name))) {
     const c = first.candidate;
     const turned = { name: `${c.name}@${across.toLowerCase()}`, features: c.lanes ? { ...NONE, direction: across } : { ...c.features, direction: across }, lanes: c.lanes };
     try {

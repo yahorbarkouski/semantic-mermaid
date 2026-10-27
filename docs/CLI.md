@@ -1,6 +1,6 @@
 # The semantic-mermaid command
 
-`semantic-mermaid` checks a Semantic Mermaid diagram and renders it to SVG or PNG. Your agent runs it through the skill; this page is for running it yourself.
+`semantic-mermaid` checks a Semantic Mermaid diagram and renders it to SVG or PNG. Your agent runs it through the skill; this page is for running it yourself. Mermaid is the default renderer. Add `--renderer pele` to `check` or `render` to use Pele; its SVG output needs no headless browser. PNG still needs `setup`. See the [Pele guide](PELE.md).
 
 ## Install
 
@@ -44,6 +44,7 @@ semantic-mermaid source order.svg
 | Option | Command | What it does |
 | --- | --- | --- |
 | `-o <file>` | `render` | The image to write, `.svg` or `.png`; repeat it to write both |
+| `--renderer mermaid\|pele` | `check`, `render` | Which parser and renderer to use; default `mermaid` |
 | `--page-width <px>` | `render` | The width of the page the image is for (default 800) |
 | `--no-fit` | `render` | Draw for no page: the diagram keeps its own width (a drawing longer than 8:1 is still tried turned) |
 | `--elk` | `render` | Draw the same diagram with Mermaid's ELK layout, for comparison |

@@ -40,6 +40,8 @@ You know what the diagram means when you write it. State all of it, and the engi
 
    `render` draws for a page about 800 px wide, such as a README or a chat: it centres a narrower diagram, and lays out the other way one the page would shrink below 40% of its size, with a `note` saying so; keep that drawing. For an image shown much wider or narrower, pass `--page-width <px>`.
 
+   If the user or project uses Pele, add `--renderer pele` to `check` and `render`. SVG rendering then needs no browser; PNG still needs `setup`. Plain Pele ignores these directives, so a host that uses Pele needs the `semantic-mermaid/pele` integration to apply semantic layout. Otherwise deliver the rendered image as above.
+
    There is no need to open the image yourself. If `render` says the browser is not installed, ask the user whether to run `semantic-mermaid setup`, which downloads about 95 MB once.
 
    In PowerShell, pipe a here-string instead of a heredoc, with `@'` ending its first line and `'@` starting its last, and write temporary files under `$env:TEMP`:
