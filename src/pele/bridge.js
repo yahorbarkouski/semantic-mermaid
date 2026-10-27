@@ -13,6 +13,13 @@ export { detectType, PeleError };
 /** @typedef {{ nodeSep: number, edgeSep: number, rankSep: number }} Spacing */
 /** @typedef {{ nodes: MeasuredNode[], edges: MeasuredEdge[], direction: string, spacing: Spacing }} Measured */
 /** @typedef {(nodes: MeasuredNode[], edges: MeasuredEdge[]) => { width: number, height: number }} Placement */
+/**
+ * @typedef {object} Prepared
+ * @property {FlowGraph} graph
+ * @property {NonNullable<RenderOptions['config']>} config
+ * @property {Measured} measured
+ * @property {(apply: Placement) => import('pele').RenderResult} finish
+ */
 
 /**
  * Parse through Pele's own preprocessing and protections. Each parsed model retains its own
@@ -20,6 +27,7 @@ export { detectType, PeleError };
  * @param {string} source
  * @param {RenderOptions} options
  * @param {(graph: FlowGraph, direction: string) => void} prepareGraph
+ * @returns {Prepared}
  */
 export function prepare(source, options, prepareGraph) {
   const captured = {};
